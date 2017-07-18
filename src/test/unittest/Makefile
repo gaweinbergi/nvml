@@ -45,6 +45,10 @@ OBJS = ut.o ut_alloc.o ut_file.o ut_pthread.o ut_signal.o ut_backtrace.o\
 	os_linux.o os_thread_linux.o
 CFLAGS = -I$(TOP)/src/include
 CFLAGS += -I$(TOP)/src/common
+ifeq ($(OSTYPE),FreeBSD)
+CFLAGS += -I/usr/local/include
+LIBS += -lutil
+endif
 CFLAGS += -std=gnu99
 CFLAGS += -ggdb
 CFLAGS += -Wall

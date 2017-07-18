@@ -46,6 +46,11 @@
 #include "rpmem_common.h"
 #include "rpmem_util.h"
 
+#ifdef __FreeBSD__	/* XXX are these the best mappings? */
+#define EREMOTEIO EIO
+#define EMEDIUMTYPE EOPNOTSUPP
+#endif
+
 static struct rpmem_err_str_errno {
 	int err;
 	const char *str;

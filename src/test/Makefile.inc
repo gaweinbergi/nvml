@@ -41,6 +41,14 @@ TOP := $(dir $(lastword $(MAKEFILE_LIST)))../..
 
 include $(TOP)/src/common.inc
 
+ifeq ($(OSTYPE),FreeBSD)
+INCS += -I/usr/local/include
+LIBS += -luuid
+LIBDL=
+LDFLAGS += -L/usr/local/lib
+else
+LIBDL=-ldl
+endif
 LIBS_DIR=$(TOP)/src
 
 EXAMPLES_DIR=$(TOP)/src/examples
@@ -53,18 +61,21 @@ UT = ../unittest/libut.a
 LIBS += $(UT)
 
 ifeq ($(USE_LIBUNWIND),1)
-LIBS += -ldl -lunwind
+LIBS += $(LIBDL) -lunwind
 else
 ifneq ($(USE_LIBUNWIND),0)
 UNWIND := $(call check_package, libunwind)
 ifeq ($(UNWIND),y)
-LIBS += -ldl $(shell $(PKG_CONFIG) --libs libunwind)
+LIBS += $(LIBDL) $(shell $(PKG_CONFIG) --libs libunwind)
 endif
 endif
 endif
 
 LIBS += -L$(LIBS_DIR)/debug
 LIBS += -pthread
+ifeq ($(OSTYPE),FreeBSD)
+LIBS += -lutil
+endif
 
 # XXX: required by clock_gettime(), if glibc version < 2.17
 # The os_clock_gettime() function is now in OS abstraction layer,
@@ -77,7 +88,7 @@ ifeq ($(LIBPMEMPOOL), y)
 DYNAMIC_LIBS += -lpmempool
 STATIC_DEBUG_LIBS += $(LIBS_DIR)/debug/libpmempool.a
 STATIC_NONDEBUG_LIBS += $(LIBS_DIR)/nondebug/libpmempool.a
-LIBS += -ldl
+LIBS += $(LIBDL)
 CFLAGS += -DUSE_LIBDL
 endif
 
@@ -94,7 +105,7 @@ STATIC_NONDEBUG_LIBS += $(LIBS_DIR)/nondebug/libpmemlog.a
 endif
 
 ifeq ($(LIBPMEMOBJ), y)
-LIBS += -ldl
+LIBS += $(LIBDL)
 DYNAMIC_LIBS += -lpmemobj
 STATIC_DEBUG_LIBS += $(LIBS_DIR)/debug/libpmemobj.a
 STATIC_NONDEBUG_LIBS += $(LIBS_DIR)/nondebug/libpmemobj.a
@@ -125,7 +136,7 @@ OBJS += $(TOP)/src/debug/libpmemobj/alloc_class.o\
 	$(TOP)/src/debug/libpmemobj/sync.o\
 	$(TOP)/src/debug/libpmemobj/tx.o
 
-LIBS += -ldl
+LIBS += $(LIBDL)
 INCS += -I$(TOP)/src/libpmemobj
 LIBPMEM=y
 LIBPMEMCOMMON=y
@@ -164,7 +175,7 @@ endif
 ifeq ($(LIBPMEMCOMMON), y)
 OBJS += $(LIBS_DIR)/debug/libpmemcommon.a
 INCS += -I$(TOP)/src/common
-LIBS += -ldl
+LIBS += $(LIBDL)
 LIBPMEM=y
 endif
 
@@ -223,6 +234,12 @@ CFLAGS += $(GCOV_CFLAGS)
 CXXFLAGS += $(GCOV_CFLAGS)
 LDFLAGS += $(GCOV_LDFLAGS)
 LIBS += $(GCOV_LIBS)
+endif
+
+ifneq ($(SANITIZE),)
+CFLAGS += -fsanitize=$(SANITIZE)
+CXXFLAGS += -fsanitize=$(SANITIZE)
+LDFLAGS += -fsanitize=$(SANITIZE)
 endif
 
 LINKER=$(CC)
@@ -336,6 +353,7 @@ else
 ifeq ($(SCP_SRC_DIR),)
 $(error SCP_SRC_DIR is not set)
 endif
+	$(SCP) common
 	$(SCP) test $(SCP_SRC_DIR)/$(SCP_TARGET) $(SCP_TARGET_STATIC_DEBUG) $(SCP_TARGET_STATIC_NONDEBUG)
 endif
 	@touch $(SYNC_FILE)

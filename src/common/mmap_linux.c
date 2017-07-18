@@ -43,6 +43,15 @@
 
 #define PROCMAXLEN 2048 /* maximum expected line length in /proc files */
 
+#ifdef __FreeBSD__
+#define MAPFILE "/proc/curproc/map"
+static const char *sscanf_fbsd = "%p %p";
+#else
+#define MAPFILE "/proc/self/maps"
+#endif
+
+static const char *sscanf_linux = "%p-%p";
+
 /*
  * util_map_hint_unused -- use /proc to determine a hint address for mmap()
  *
@@ -58,15 +67,24 @@
  * different address.
  */
 char *
-util_map_hint_unused(void *minaddr, size_t len, size_t align)
+util_map_hint_unused(void *minaddr, size_t len, size_t align,
+	const char *altfile)
 {
-	LOG(3, "minaddr %p len %zu align %zu", minaddr, len, align);
+	LOG(3, "minaddr %p len %zu align %zu altfile %s", minaddr, len, align,
+		(altfile == NULL) ? "" : altfile);
 
 	ASSERT(align > 0);
 
+#ifdef __FreeBSD__	/* XXX Alternate map files remain in Linux format */
+	const char *sfs = (altfile == NULL) ? sscanf_fbsd : sscanf_linux;
+#else
+	const char *sfs = sscanf_linux;
+#endif
+
 	FILE *fp;
-	if ((fp = os_fopen("/proc/self/maps", "r")) == NULL) {
-		ERR("!/proc/self/maps");
+	const char *mf = (altfile == NULL) ? MAPFILE : altfile;
+	if ((fp = os_fopen(mf, "r")) == NULL) {
+		ERR("!%s", mf);
 		return MAP_FAILED;
 	}
 
@@ -82,7 +100,7 @@ util_map_hint_unused(void *minaddr, size_t len, size_t align)
 
 	while (fgets(line, PROCMAXLEN, fp) != NULL) {
 		/* check for range line */
-		if (sscanf(line, "%p-%p", &lo, &hi) == 2) {
+		if (sscanf(line, sfs, &lo, &hi) == 2) {
 			LOG(4, "%p-%p", lo, hi);
 			if (lo > raddr) {
 				if ((uintptr_t)(lo - raddr) >= len) {
@@ -141,9 +159,10 @@ util_map_hint_unused(void *minaddr, size_t len, size_t align)
  * address.
  */
 char *
-util_map_hint(size_t len, size_t req_align)
+util_map_hint(size_t len, size_t req_align, const char *altfile)
 {
-	LOG(3, "len %zu req_align %zu", len, req_align);
+	LOG(3, "len %zu req_align %zu altfile %s", len, req_align,
+		(altfile == NULL) ? "" : altfile);
 
 	char *hint_addr = MAP_FAILED;
 
@@ -152,7 +171,8 @@ util_map_hint(size_t len, size_t req_align)
 
 	if (Mmap_no_random) {
 		LOG(4, "user-defined hint %p", (void *)Mmap_hint);
-		hint_addr = util_map_hint_unused((void *)Mmap_hint, len, align);
+		hint_addr = util_map_hint_unused((void *)Mmap_hint, len, align,
+				altfile);
 	} else {
 		/*
 		 * Create dummy mapping to find an unused region of given size.

@@ -57,7 +57,6 @@ SOURCE =\
 	$(COMMON)/set.c\
 	$(COMMON)/util.c\
 	$(COMMON)/uuid.c\
-	$(COMMON)/uuid_linux.c\
 	$(COMMON)/util_linux.c\
 	libpmempool.c\
 	check.c\
@@ -78,6 +77,12 @@ SOURCE =\
 	transform.c\
 	rm.c
 
+ifeq ($(OSTYPE),FreeBSD)
+SOURCE += $(COMMON)/uuid_freebsd.c
+else
+SOURCE += $(COMMON)/uuid_linux.c
+endif
+
 LIBPMEMBLK_PRIV_FUNCS=btt_info_set btt_arena_datasize btt_flog_size\
 	btt_map_size btt_flog_get_valid map_entry_is_initial btt_info_convert2h\
 	btt_info_convert2le btt_flog_convert2h btt_flog_convert2le
@@ -86,7 +91,11 @@ LIBPMEMLOG_PRIV_FUNCS=log_convert2h log_convert2le
 
 include ../Makefile.inc
 
+ifeq ($(OSTYPE),FreeBSD)
+LIBS += -lpmem
+else
 LIBS += -lpmem -ldl
+endif
 CFLAGS += -DUSE_LIBDL
 CFLAGS += -DUSE_RPMEM
 

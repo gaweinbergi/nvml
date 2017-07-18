@@ -40,6 +40,8 @@ LIBPMEM=y
 LIBPMEMOBJ=y
 LIBPMEMBLK=y
 LIBPMEMLOG=y
+ifneq ($(OSTYPE),FreeBSD)
 LIBVMEM=y
+endif
 
 include ../Makefile.inc

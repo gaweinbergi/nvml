@@ -48,5 +48,7 @@ clobber: libtest_clean
 libtest_clean:
 	$(RM) libtest.so
 
+ifneq ($(OSTYPE),FreeBSD)
 LIBS += -ldl
+endif
 CFLAGS += -Wno-deprecated-declarations

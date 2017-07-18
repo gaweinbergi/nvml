@@ -46,8 +46,13 @@ SOURCE =\
 	set.c\
 	util.c\
 	uuid.c\
-	uuid_linux.c\
 	util_linux.c
+
+ifeq ($(OSTYPE),FreeBSD)
+SOURCE += uuid_freebsd.c
+else
+SOURCE += uuid_linux.c
+endif
 
 include ../Makefile.inc
 

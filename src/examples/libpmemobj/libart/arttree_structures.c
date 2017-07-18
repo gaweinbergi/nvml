@@ -48,6 +48,9 @@
  * ===========================================================================
  */
 
+#ifdef __FreeBSD__
+#define _WITH_GETLINE
+#endif
 #include <stdio.h>
 #include <fcntl.h>
 #include <libgen.h>

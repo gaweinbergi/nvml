@@ -57,6 +57,10 @@
 	RPMEM_REMOVE_POOL_SET	\
 )
 
+#ifdef __FreeBSD__
+#define ENOMEDIUM ENODEV	/* XXX */
+#endif
+
 extern int Rpmem_fork_unsafe;
 
 /*

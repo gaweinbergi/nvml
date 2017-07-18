@@ -178,8 +178,11 @@ getexecname(void)
 #ifndef _WIN32
 	char procpath[PATH_MAX];
 
+#ifdef __FreeBSD__
+	snprintf(procpath, PATH_MAX, "/proc/%d/file", getpid());
+#else
 	snprintf(procpath, PATH_MAX, "/proc/%d/exe", getpid());
-
+#endif
 	if ((cc = readlink(procpath, namepath, PATH_MAX)) < 0)
 #else
 	if ((cc = GetModuleFileNameA(NULL, namepath, PATH_MAX)) == 0)

@@ -39,4 +39,6 @@ OBJS = util_map_proc.o
 LIBPMEMCOMMON=y
 
 include ../Makefile.inc
+ifneq ($(OSTYPE),FreeBSD)
 LIBS += -ldl
+endif

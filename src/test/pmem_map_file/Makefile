@@ -40,4 +40,6 @@ LIBPMEM=y
 
 include ../Makefile.inc
 
+ifneq ($(OSTYPE),FreeBSD)
 LIBS += -ldl
+endif

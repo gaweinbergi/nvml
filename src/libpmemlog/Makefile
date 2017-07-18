@@ -48,10 +48,15 @@ SOURCE =\
 	$(COMMON)/set.c\
 	$(COMMON)/util.c\
 	$(COMMON)/uuid.c\
-	$(COMMON)/uuid_linux.c\
 	$(COMMON)/util_linux.c\
 	libpmemlog.c\
 	log.c
+
+ifeq ($(OSTYPE),FreeBSD)
+SOURCE += $(COMMON)/uuid_freebsd.c
+else
+SOURCE += $(COMMON)/uuid_linux.c
+endif
 
 include ../Makefile.inc
 

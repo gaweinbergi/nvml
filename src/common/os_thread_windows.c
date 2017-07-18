@@ -62,6 +62,8 @@ typedef struct {
 	CONDITION_VARIABLE cond;
 } internal_os_cond_t;
 
+typedef long long internal_os_once_t;
+
 typedef struct {
 	HANDLE handle;
 } internal_semaphore_t;
@@ -394,7 +396,8 @@ os_cond_wait(os_cond_t *__restrict cond,
 int
 os_once(os_once_t *once, void (*func)(void))
 {
-	if (!_InterlockedCompareExchange64(once, 1, 0))
+	internal_os_once_t *once_internal = (internal_os_once_t *)once;
+	if (!_InterlockedCompareExchange64(once_internal, 1, 0))
 		func();
 	return 0;
 }

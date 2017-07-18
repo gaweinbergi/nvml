@@ -41,6 +41,8 @@
 #
 # Use "make check" to run unit tests.
 #
+# Use "make check-local to run only local unit tests.
+#
 # Use "make check-remote" to run only remote unit tests.
 #
 # Use "make clean" to delete all intermediate files (*.o, etc).
@@ -72,6 +74,7 @@ RPM_BUILDDIR=rpmbuild
 DPKG_BUILDDIR=dpkgbuild
 EXPERIMENTAL ?= n
 BUILD_PACKAGE_CHECK ?= y
+
 rpm : override DESTDIR=$(CURDIR)/$(RPM_BUILDDIR)
 dpkg: override DESTDIR=$(CURDIR)/$(DPKG_BUILDDIR)
 rpm dpkg: override prefix=/usr
@@ -94,7 +97,7 @@ clobber:
 	$(MAKE) -C utils $@
 	$(RM) -r $(RPM_BUILDDIR) $(DPKG_BUILDDIR) rpm dpkg
 
-test check pcheck check-remote: all
+test check check-local pcheck check-remote: all
 	$(MAKE) -C src $@
 
 cstyle:
@@ -140,5 +143,5 @@ install uninstall:
 	$(MAKE) -C src $@
 	$(MAKE) -C doc $@
 
-.PHONY: all clean clobber test check cstyle check-license install uninstall\
+.PHONY: all clean clobber test check check-local cstyle check-license install uninstall\
 	source rpm dpkg pkg-clean pcheck check-remote format doc $(SUBDIRS)

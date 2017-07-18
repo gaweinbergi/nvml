@@ -109,7 +109,9 @@ extern "C" {
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/file.h>
+#ifndef __FreeBSD__
 #include <sys/mount.h>
+#endif
 #include <fcntl.h>
 #include <signal.h>
 #include <errno.h>

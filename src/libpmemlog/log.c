@@ -43,7 +43,11 @@
 #include <errno.h>
 #include <time.h>
 #include <stdint.h>
+#ifdef __FreeBSD__
+#include <sys/endian.h>
+#else
 #include <endian.h>
+#endif
 
 #include "libpmem.h"
 #include "libpmemlog.h"
@@ -213,7 +217,13 @@ pmemlog_createU(const char *path, size_t poolsize, mode_t mode)
 	if (util_poolset_chmod(set, mode))
 		goto err;
 
+	/*
+	 * XXX On FreeBSD, mmap()ing a file does not increment the flock()
+	 *     reference count, so we need to keep the files open.
+	 */
+#ifndef __FreeBSD__
 	util_poolset_fdclose(set);
+#endif
 
 	LOG(3, "plp %p", plp);
 	return plp;
@@ -310,7 +320,13 @@ log_open_common(const char *path, int cow)
 		goto err;
 	}
 
+	/*
+	 * XXX On FreeBSD, mmap()ing a file does not increment the flock()
+	 *     reference count, so we need to keep the files open.
+	 */
+#ifndef __FreeBSD__
 	util_poolset_fdclose(set);
+#endif
 
 	LOG(3, "plp %p", plp);
 	return plp;

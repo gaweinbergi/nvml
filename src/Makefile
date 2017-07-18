@@ -36,28 +36,37 @@ TOP := $(dir $(lastword $(MAKEFILE_LIST)))..
 include $(TOP)/src/common.inc
 include $(TOP)/src/version.inc
 
-TARGETS = libpmem libvmem libpmemblk libpmemlog libpmemobj libpmempool\
-	libvmmalloc tools
+TARGETS = libpmem libpmemblk libpmemlog libpmemobj libpmempool tools
+NON_BSD_TARGETS = libvmem libvmmalloc
+ifneq ($(OSTYPE),FreeBSD)
+TARGETS += $(NON_BSD_TARGETS)
+endif
+
 ALL_TARGETS = $(TARGETS) common librpmem examples benchmarks
 SCOPE_DIRS = $(TARGETS) common librpmem rpmem_common
 
-DEBUG_RELEASE_TARGETS = common libpmem libvmem libpmemblk libpmemlog libpmemobj\
-	libpmempool libvmmalloc librpmem
+DEBUG_RELEASE_TARGETS = common libpmem libpmemblk libpmemlog libpmemobj\
+	libpmempool librpmem
+ifneq ($(OSTYPE),FreeBSD)
+DEBUG_RELEASE_TARGETS += $(NON_BSD_TARGETS)
+endif
 RELEASE_TARGETS = tools examples benchmarks
 
 CLEAN_NO_JE_TARGETS = $(ALL_TARGETS) rpmem_common test
 CLEAN_TARGETS = $(CLEAN_NO_JE_TARGETS) jemalloc
-CLOBBER_NO_JE_TARGETS = $(ALL_TARGETS) rpmem_common test
+CLOBBER_NO_JE_TARGETS = $(ALL_TARGETS) $(NON_BSD_TARGETS) rpmem_common test
 CLOBBER_TARGETS = $(CLOBBER_NO_JE_TARGETS) jemalloc
 CSTYLE_TARGETS = $(ALL_TARGETS) test rpmem_common
 INSTALL_TARGETS = $(TARGETS)
 SPARSE_TARGETS = $(ALL_TARGETS) test rpmem_common
 
 HEADERS_DESTDIR = $(DESTDIR)$(includedir)
-HEADERS_INSTALL = include/libpmem.h include/libvmem.h\
+HEADERS_INSTALL = include/libpmem.h \
 		include/libpmemobj.h include/libpmempool.h\
-		include/libpmemblk.h include/libpmemlog.h\
-		include/libvmmalloc.h
+		include/libpmemblk.h include/libpmemlog.h
+ifneq ($(OSTYPE),FreeBSD)
+HEADERS_INSTALL += include/libvmem.h include/libvmmalloc.h
+endif
 
 OBJ_HEADERS_INSTALL = include/libpmemobj/*.h
 
@@ -162,10 +171,18 @@ $(RELEASE_TARGETS):
 
 jemalloc-check: jemalloc-test
 
+ifneq ($(OSTYPE),FreeBSD)
 test: all jemalloc-test
+else
+test: all
+endif
 	$(MAKE) -C test test
 
-check pcheck: test jemalloc-check
+ifneq ($(OSTYPE),FreeBSD)
+check check-local pcheck: test jemalloc-check
+else
+check check-local pcheck: test
+endif
 	$(MAKE) -C test $@
 
 check-remote: test
@@ -221,6 +238,6 @@ clobber: clean-here
 .NOTPARALLEL: libvmem libvmmalloc
 
 .PHONY: all install uninstall uninstall-cpp install-cpp clean clobber cstyle\
-	format test check pcheck jemalloc jemalloc-clean jemalloc-test\
+	format test check check-local pcheck jemalloc jemalloc-clean jemalloc-test\
 	jemalloc-check cscope $(ALL_TARGETS) pkg-config check-remote clean-here\
 	pkg-cfg-common

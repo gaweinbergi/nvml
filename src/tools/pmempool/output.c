@@ -43,7 +43,11 @@
 #include <ctype.h>
 #include <err.h>
 #include <elf.h>
+#ifdef __FreeBSD__
+#include <sys/endian.h>
+#else
 #include <endian.h>
+#endif
 #include <inttypes.h>
 #include "common.h"
 #include "output.h"
@@ -808,9 +812,12 @@ out_get_e_machine_str(uint16_t e_machine)
 	case EM_X86_64:
 		return "AMD X86-64";
 	default:
+#ifndef __FreeBSD__	/* XXX This check is rather pointless... */
 		if (e_machine >= EM_NUM) {
 			return "unknown";
-		} else {
+		} else
+#endif
+			{
 			int ret = snprintf(str_buff, STR_MAX, "%u", e_machine);
 			if (ret < 0 || ret >= STR_MAX)
 				return "";

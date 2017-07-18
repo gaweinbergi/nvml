@@ -42,9 +42,10 @@
 #define BLK 1
 #define LOG 2
 
+#ifndef __FreeBSD__
 #define VMEM_ 3
 #define VMEM_POOLS 4
-
+#endif
 
 static struct counters {
 	int mallocs;
@@ -52,7 +53,6 @@ static struct counters {
 	int reallocs;
 	int strdups;
 } cnt[4];
-
 
 static void *
 test_malloc(size_t size)
@@ -192,6 +192,7 @@ log_strdup(const char *s)
 	return test_strdup(s);
 }
 
+#ifndef __FreeBSD__
 static void *
 _vmem_malloc(size_t size)
 {
@@ -220,6 +221,7 @@ _vmem_strdup(const char *s)
 	cnt[VMEM_].strdups++;
 	return test_strdup(s);
 }
+#endif
 
 /*
  * There are a few allocations made at first call to pmemobj_open() or
@@ -336,6 +338,7 @@ test_log(const char *path)
 	UNLINK(path);
 }
 
+#ifndef __FreeBSD__
 static void
 test_vmem(const char *dir)
 {
@@ -370,6 +373,7 @@ test_vmem(const char *dir)
 	if (cnt[VMEM_].mallocs + cnt[VMEM_].strdups > cnt[VMEM_].frees + 4)
 		UT_FATAL("VMEM memory leak");
 }
+#endif
 
 int
 main(int argc, char *argv[])
@@ -382,13 +386,17 @@ main(int argc, char *argv[])
 	pmemobj_set_funcs(obj_malloc, obj_free, obj_realloc, obj_strdup);
 	pmemblk_set_funcs(blk_malloc, blk_free, blk_realloc, blk_strdup);
 	pmemlog_set_funcs(log_malloc, log_free, log_realloc, log_strdup);
+#ifndef __FreeBSD__
 	vmem_set_funcs(_vmem_malloc, _vmem_free, _vmem_realloc, _vmem_strdup,
 			NULL);
+#endif
 
 	test_obj(argv[1]);
 	test_blk(argv[1]);
 	test_log(argv[1]);
+#ifndef __FreeBSD__
 	test_vmem(argv[2]);
+#endif
 
 	DONE(NULL);
 }

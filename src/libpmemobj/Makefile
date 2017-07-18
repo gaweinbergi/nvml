@@ -48,7 +48,6 @@ SOURCE =\
 	$(COMMON)/set.c\
 	$(COMMON)/util.c\
 	$(COMMON)/uuid.c\
-	$(COMMON)/uuid_linux.c\
 	$(COMMON)/util_linux.c\
 	alloc_class.c\
 	bucket.c\
@@ -74,8 +73,18 @@ SOURCE =\
 	sync.c\
 	tx.c
 
+ifeq ($(OSTYPE),FreeBSD)
+SOURCE += $(COMMON)/uuid_freebsd.c
+else
+SOURCE += $(COMMON)/uuid_linux.c
+endif
+
 include ../Makefile.inc
 
 CFLAGS += -DUSE_LIBDL -D_PMEMOBJ_INTRNL
 
+ifeq ($(OSTYPE),FreeBSD)
+LIBS += -pthread -lpmem
+else
 LIBS += -pthread -lpmem -ldl
+endif

@@ -44,7 +44,9 @@
 #include <libgen.h>
 #include <err.h>
 #include <sys/ioctl.h>
+#ifndef __FreeBSD__
 #include <linux/kdev_t.h>
+#endif
 
 #include <map.h>
 #include <map_ctree.h>
@@ -1908,6 +1910,9 @@ pmemobjfs_fuse_flush(const char *path, struct fuse_file_info *fi)
 /*
  * pmemobjfs_fuse_ioctl -- (FUSE) ioctl for file
  */
+#ifdef __FreeBSD__
+#define EBADFD EBADF /* XXX */
+#endif
 static int
 pmemobjfs_fuse_ioctl(const char *path, int cmd, void *arg,
 		struct fuse_file_info *fi, unsigned flags, void *data)

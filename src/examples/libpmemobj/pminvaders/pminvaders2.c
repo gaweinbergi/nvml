@@ -39,7 +39,11 @@
  */
 
 #include <stddef.h>
+#ifdef __FreeBSD__
+#include <ncurses/ncurses.h>	/* Need pkg, not system, version */
+#else
 #include <ncurses.h>
+#endif
 #include <unistd.h>
 #include <time.h>
 #include <stdlib.h>

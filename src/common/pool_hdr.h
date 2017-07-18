@@ -45,6 +45,14 @@
  */
 #define ALIGNMENT_DESC_BITS		4
 
+#ifdef __FreeBSD__
+#include <elf.h>
+#if __ELF_WORD_SIZE == 32
+#define ElfW(type) Elf32_##type
+#else
+#define ElfW(type) Elf64_##type
+#endif
+#endif /* __FreeBSD */
 /*
  * architecture identification flags
  *

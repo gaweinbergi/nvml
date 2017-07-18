@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2016, Intel Corporation
+# Copyright 2014-2017, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -34,8 +34,10 @@
 # examples/Makefile -- build the NVM Library examples
 #
 
-DIRS = libpmem libpmemblk libpmemlog libpmemobj libvmem librpmem\
-	libpmempool
+DIRS = libpmem libpmemblk libpmemlog libpmemobj librpmem libpmempool
+ifneq ($(OSTYPE),FreeBSD)
+DIRS += libvmem
+endif
 
 include Makefile.inc
 

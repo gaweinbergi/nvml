@@ -68,7 +68,6 @@ SRC=pmembench.cpp\
     scenario.cpp\
     log.cpp\
     blk.cpp\
-    vmem.cpp\
     pmem_memset.cpp\
     pmem_memcpy.cpp\
     pmem_flush.cpp\
@@ -80,11 +79,13 @@ SRC=pmembench.cpp\
     map_bench.cpp\
     pmemobj_tx.cpp\
     pmemobj_atomic_lists.cpp
+ifneq ($(OSTYPE),FreeBSD)
+SRC += vmem.cpp
+endif
 
 # Configuration file without the .cfg extension
 CONFIGS=pmembench_log\
 	pmembench_blk\
-	pmembench_vmem\
 	pmembench_memset\
 	pmembench_memcpy\
 	pmembench_flush\
@@ -96,6 +97,9 @@ CONFIGS=pmembench_log\
 	pmembench_map\
 	pmembench_tx\
 	pmembench_atomic_lists
+ifneq ($(OSTYPE),FreeBSD)
+CONFIGS += pmembench_vmem
+endif
 
 OBJS=$(SRC:.cpp=.o)
 ifneq ($(filter 1 2, $(CSTYLEON)),)
@@ -109,7 +113,12 @@ LIBS += ../nondebug/libpmemcommon.a
 else
 LIBS += ../debug/libpmemcommon.a
 endif
+ifneq ($(OSTYPE),FreeBSD)
 LIBS += -lpmemobj -lpmemlog -lpmemblk -lpmem -lvmem -pthread -lm -ldl
+else
+LIBS += -lpmemobj -lpmemlog -lpmemblk -lpmem -pthread -luuid -lm
+LDFLAGS += -L/usr/local/lib
+endif
 ifeq ($(call check_librt), n)
 LIBS += -lrt
 endif
@@ -133,6 +142,11 @@ ifeq ($(COVERAGE),1)
 CXXFLAGS += $(GCOV_CFLAGS)
 LDFLAGS += $(GCOV_LDFLAGS)
 LIBS += $(GCOV_LIBS)
+endif
+
+ifneq ($(SANITIZE),)
+CXXFLAGS += -fsanitize=$(SANITIZE)
+LDFLAGS += -fsanitize=$(SANITIZE)
 endif
 
 ifeq ($(BUILD_RPMEM),y)

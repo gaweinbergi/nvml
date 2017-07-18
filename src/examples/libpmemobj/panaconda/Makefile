@@ -45,6 +45,9 @@ $(info NOTE: Skipping panaconda because ncurses is missing \
 endif
 
 LIBS = -lpmemobj -lpmem -pthread
+ifeq ($(OSTYPE),FreeBSD)
+LIBS += -lc
+endif
 
 ifeq ($(NCURSES),y)
 LIBS += $(shell $(PKG_CONFIG) --libs ncurses)

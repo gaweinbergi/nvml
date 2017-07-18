@@ -332,7 +332,7 @@ private:
 	static int
 	find_crit_bit(key_type lhs, key_type rhs)
 	{
-		return fls(lhs ^ rhs);
+		return find_last_set_64(lhs ^ rhs);
 	}
 
 	/*

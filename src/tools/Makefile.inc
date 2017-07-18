@@ -39,6 +39,12 @@ INSTALL_TARGET ?= y
 
 INCS += -I.
 INCS += -I$(TOP)/src/include
+ifeq ($(OSTYPE),FreeBSD)
+INCS += -I/usr/local/include
+LIBDL=
+else
+LIBDL=-ldl
+endif
 CFLAGS += -std=gnu99
 CFLAGS += -Wall
 CFLAGS += -Werror
@@ -67,9 +73,19 @@ else
 CFLAGS += -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 $(EXTRA_CFLAGS_RELEASE)
 endif
 
+ifneq ($(SANITIZE),)
+CFLAGS += -fsanitize=$(SANITIZE)
+LDFLAGS += -fsanitize=$(SANITIZE)
+endif
+
 CFLAGS += $(EXTRA_CFLAGS)
 
-LDFLAGS += -Wl,-z,relro -Wl,--warn-common -Wl,--fatal-warnings $(EXTRA_LDFLAGS) -L$(TOP)/src/nondebug
+LDFLAGS += -Wl,-z,relro -Wl,--warn-common -Wl,--fatal-warnings $(EXTRA_LDFLAGS)
+ifeq ($(DEBUG),1)
+LDFLAGS += -L$(TOP)/src/debug
+else
+LDFLAGS += -L$(TOP)/src/nondebug
+endif
 TARGET_DIR=$(DESTDIR)$(bindir)
 BASH_COMP_FILES ?=
 BASH_COMP_DESTDIR = $(DESTDIR)$(bashcompdir)
@@ -93,6 +109,10 @@ PMEMBLK_PRIV_OBJ=$(LIBSDIR_PRIV)/libpmemblk/libpmemblk_unscoped.o
 
 LIBS += -pthread
 
+ifeq ($(OSTYPE),FreeBSD)
+LDFLAGS += -L/usr/local/lib
+LIBS += -luuid
+endif
 # XXX: required by clock_gettime(), if glibc version < 2.17
 # The os_clock_gettime() function is now in OS abstraction layer,
 # linked to all the librariess, unit tests and benchmarks.
@@ -109,7 +129,7 @@ DYNAMIC_LIBS += $(LIBSDIR_DEBUG)/libpmemcommon.a
 STATIC_DEBUG_LIBS += $(LIBSDIR_DEBUG)/libpmemcommon.a
 STATIC_NONDEBUG_LIBS += $(LIBSDIR_NONDEBUG)/libpmemcommon.a
 CFLAGS += -I$(TOP)/src/common
-LIBS += -ldl
+LIBS += $(LIBDL)
 endif
 
 ifeq ($(LIBPMEMPOOL), y)
@@ -131,7 +151,7 @@ STATIC_NONDEBUG_LIBS += $(LIBSDIR_NONDEBUG)/libpmemlog.a
 endif
 
 ifeq ($(LIBPMEMOBJ), y)
-LIBS += -ldl
+LIBS += $(LIBDL)
 DYNAMIC_LIBS += -lpmemobj
 STATIC_DEBUG_LIBS += $(LIBSDIR_DEBUG)/libpmemobj.a
 STATIC_NONDEBUG_LIBS += $(LIBSDIR_NONDEBUG)/libpmemobj.a
@@ -159,7 +179,9 @@ CFLAGS += -I$(TOP)/src/libpmemlog
 CFLAGS += -I$(TOP)/src/libpmemblk
 CFLAGS += -I$(TOP)/src/libpmemobj
 CFLAGS += -I$(TOP)/src/tools/pmempool
+ifneq ($(OSTYPE),FreeBSD)
 common.o: CFLAGS += -D__USE_UNIX98
+endif
 
 endif
 

@@ -20,23 +20,26 @@ This tree contains a collection of libraries for using Non-Volatile Memory
 
 * **libpmem** -- basic pmem operations like flushing
 * **libpmemblk**, **libpmemlog**, **libpmemobj** -- pmem transactions
-* **libvmem**, **libvmmalloc** -- volatile use of pmem
+* **libvmem**<sup>1</sup>, **libvmmalloc**<sup>1,2</sup> -- volatile use of pmem
 * **libpmempool** -- persistent memory pool management
-* **librpmem** -- remote access to persistent memory (EXPERIMENTAL)
+* **librpmem**<sup>2</sup> -- remote access to persistent memory
 
 and one command-line utility:
 
 * **pmempool** -- standalone tool for off-line pool management
 
+><sup>1</sup> Not supported on FreeBSD.
+><sup>2</sup> Not supported on Windows.
+
 These libraries and utilities are described in more detail on the
 [pmem web site](http://pmem.io).  There you'll find man pages, examples,
 and tutorials.
 
-**Currently, these libraries only work on 64-bit Linux and Windows.**
+**Currently, these libraries only work on 64-bit Linux, Windows<sup>3</sup> and 64-bit FreeBSD 11+<sup>4</sup>.**
 
->**NOTE: NVML for Windows is feature complete, but not yet considered production quality.**
->
->The Windows port does not include _libvmmalloc_ and _librpmem_ libraries.
+>**<sup>3</sup> NVML for Windows is feature complete, but not yet considered production quality.**
+
+>**<sup>4</sup> DAX and RDMA verbs are not yet supported in FreeBSD, so at this time NVML is available as a technical preview release.**
 
 ### Pre-Built Packages ###
 
@@ -81,6 +84,17 @@ On Windows, to build NVML and run the tests you need:
 * **perl** (i.e. [ActivePerl](http://www.activestate.com/activeperl/downloads))
 
 
+To build and test this library on FreeBSD, you may need to install the following
+required packages on the build system:
+
+* **autoconf**
+* **bash**
+* **coreutils**
+* **gmake**
+* **ncurses<sup>5</sup>**
+
+>**<sup>5</sup> The pkg version of ncurses is required for proper operation; the base version included in FreeBSD is not sufficient.**
+
 Some tests and example applications require additional packages, but they
 do not interrupt building if they are missing. An appropriate message is
 displayed instead. For details please read the **DEPENDENCIES** section
@@ -92,7 +106,7 @@ to get an idea what packages are required to build on the _Travis-CI_
 system.
 
 
-#### Building NVML on Linux ####
+#### Building NVML on Linux or FreeBSD ####
 
 To build the latest development version, just clone this tree and build
 the master branch:
@@ -106,6 +120,12 @@ this command at the top level:
 ```
 	$ make
 ```
+
+(For FreeBSD, use `gmake` rather than `make`:
+```
+	$ gmake
+```
+and substitute `gmake` for `make` in all the following examples.)
 
 If you want to compile, and hopefully run the builtin tests, with a different
 compiler, you have to provide the `CC` and `CXX` variables. For example:
@@ -144,7 +164,7 @@ generate the documentation separately, run:
 ```
 	$ make doc
 ```
-**DEPENDENCIES:** pandoc
+**DEPENDENCIES:** **doxygen**, **graphviz**, **pandoc** (**hs-pandoc** on FreeBSD)
 
 To install a complete copy of the source tree to $(DESTDIR)/nvml:
 ```
@@ -160,7 +180,7 @@ If you want to build packages without running tests, run:
 ```
 	$ make BUILD_PACKAGE_CHECK=n rpm
 ```
-**DEPENDENCIES:** rpmbuild
+**DEPENDENCIES:** **rpmbuild**
 
 To build dpkg packages on Debian-based distributions:
 ```
@@ -171,7 +191,7 @@ If you want to build packages without running tests, run:
 ```
 	$ make BUILD_PACKAGE_CHECK=n dpkg
 ```
-**DEPENDENCIES:** devscripts
+**DEPENDENCIES:** **devscripts**
 
 (*) By default all code is built with -Werror flag which fails the whole build
 when compiler emits any warning. It's very useful during development, but can be
@@ -187,7 +207,7 @@ or
 
 #### Testing the Libraries ####
 
-Before running the tests, you may need to prepare a test configuration file
+Before running the tests, you will need to prepare a test configuration file
 (src/test/testconfig.sh).  Please see the available configuration settings
 in the example file (src/test/testconfig.sh.example).
 
@@ -211,17 +231,19 @@ Please refer to the **src/test/README** for more details on how to
 run different types of tests.
 
 To compile this library with enabled support for the PM-aware version
-of [Valgrind](https://github.com/pmem/valgrind), supply the compiler
+of [Valgrind](https://github.com/pmem/valgrind)<sup>6</sup>, supply the compiler
 with the **USE_VG_PMEMCHECK** flag, for example:
 ```
 	$ make EXTRA_CFLAGS=-DUSE_VG_PMEMCHECK
 ```
+<sup>6</sup> PM-aware Valgrind is not available for FreeBSD.
+
 For Valgrind memcheck support, supply **USE_VG_MEMCHECK** flag.
 **USE_VALGRIND** flag enables both.
 
 To test the libraries with AddressSanitizer and UndefinedBehaviorSanitizer, run:
 ```
-	$ make EXTRA_CFLAGS="-fsanitize=address,undefined" EXTRA_LDFLAGS="-fsanitize=address,undefined" clobber all test check
+	$ make SANITIZE=address,undefined clobber check
 ```
 
 If you wish to run C++ standard library containers tests, you need to set the

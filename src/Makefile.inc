@@ -44,6 +44,9 @@ COMMON = $(TOP)/src/common
 vpath %.c $(COMMON)
 
 INCS += -I../include -I../common/
+ifeq ($(OSTYPE),FreeBSD)
+INCS += -I/usr/local/include
+endif
 
 CFLAGS += -std=gnu99
 CFLAGS += -Wall
@@ -80,6 +83,10 @@ ifeq ($(COVERAGE),1)
 CFLAGS += $(GCOV_CFLAGS)
 LDFLAGS += $(GCOV_LDFLAGS)
 LIBS += $(GCOV_LIBS)
+endif
+ifneq ($(SANITIZE),)
+CFLAGS += -fsanitize=$(SANITIZE)
+LDFLAGS += -fsanitize=$(SANITIZE)
 endif
 
 CFLAGS += $(EXTRA_CFLAGS)

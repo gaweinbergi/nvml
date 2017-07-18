@@ -41,7 +41,11 @@
 #include "pool_hdr.h"
 #include "pmemcommon.h"
 
+#ifdef __FreeBSD__
+#define ELF_FILE_NAME "/proc/curproc/file"
+#else
 #define ELF_FILE_NAME "/proc/self/exe"
+#endif
 #define FATAL_USAGE()\
 UT_FATAL("usage: arch_flags <file>:<err>:<alignemnt_desc>:<reserved> <file>")
 #define ARCH_FLAGS_LOG_PREFIX "arch_flags"
@@ -120,7 +124,6 @@ read_arch_flags(char *arg, struct arch_flags *arch_flags)
 
 	Open_path = path;
 	Open_ret = error;
-
 	ret = util_get_arch_flags(arch_flags);
 	UT_OUT("get  : %d", ret);
 

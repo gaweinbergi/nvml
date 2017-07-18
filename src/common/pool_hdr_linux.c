@@ -49,7 +49,11 @@
 int
 util_get_arch_flags(struct arch_flags *arch_flags)
 {
+#ifdef __FreeBSD__
+	char *path = "/proc/curproc/file";
+#else
 	char *path = "/proc/self/exe";
+#endif
 	int fd;
 	ElfW(Ehdr) elf;
 	int ret = 0;

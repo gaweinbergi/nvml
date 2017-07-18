@@ -233,6 +233,7 @@ RPMEM_TESTS =\
 	rpmem_basic\
 	rpmem_addr
 
+ifneq ($(OSTYPE),FreeBSD)
 VMEM_TESTS = \
 	vmem_aligned_alloc\
 	vmem_calloc\
@@ -269,6 +270,10 @@ VMMALLOC_TESTS = \
 	vmmalloc_realloc\
 	vmmalloc_valgrind\
 	vmmalloc_valloc
+else
+VMEM_TESTS =
+VMMALLOC_TESTS =
+endif
 
 EXAMPLES_TESTS = \
 	ex_libpmem\
@@ -390,7 +395,11 @@ memcheck-summary-errors:
 memcheck-summary-leaks:
 	grep "in use at exit" */memcheck*.log | grep -v " 0 bytes in 0 blocks" || true
 
-check: test
+check-local: test
+	@./RUNTESTS $(RUNTEST_OPTIONS) $(LOCAL_TESTS)
+	@echo "No failures."
+
+check: sync-remotes
 	@./RUNTESTS $(RUNTEST_OPTIONS) $(TESTS)
 	@echo "No failures."
 
@@ -438,6 +447,7 @@ pcheck-libpmempool: TARGET = pcheck
 pcheck-libpmempool: $(LIBPMEMPOOL_TESTS)
 	@echo "No failures."
 
+ifneq ($(OSTYPE),FreeBSD)
 pcheck-vmem: TARGET = pcheck
 pcheck-vmem: $(VMEM_TESTS)
 	@echo "No failures."
@@ -445,6 +455,7 @@ pcheck-vmem: $(VMEM_TESTS)
 pcheck-vmmalloc: TARGET = pcheck
 pcheck-vmmalloc: $(VMMALLOC_TESTS)
 	@echo "No failures."
+endif
 
 pcheck-local-quiet: TARGET = pcheck
 pcheck-local-quiet: $(LOCAL_TESTS)
@@ -486,5 +497,5 @@ endif
 
 .PHONY: all check clean clobber cstyle pcheck pcheck-blk pcheck-log pcheck-obj\
 	 pcheck-other pcheck-pmem pcheck-pmempool pcheck-vmem pcheck-vmmalloc\
-	 test unittest tools check-remote format pcheck-libpmempool\
+	 test unittest tools check-local check-remote format pcheck-libpmempool\
 	 pcheck-rpmem pcheck-local pcheck-remote sync-remotes $(TESTS_BUILD)

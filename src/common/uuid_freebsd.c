@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017, Intel Corporation
+ * Copyright 2015-2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,75 +31,23 @@
  */
 
 /*
- * ex_common.h -- examples utilities
+ * uuid_freebsd.c -- FreeBSD-specific implementation for UUID generation
  */
-#ifndef EX_COMMON_H
-#define EX_COMMON_H
 
-#include <stdint.h>
+#include "uuid.h"
 
-#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifndef _WIN32
-
-#include <unistd.h>
-
-#define CREATE_MODE_RW (S_IWUSR | S_IRUSR)
+/* XXX Can't include <uuid/uuid.h> because it also defines uuid_t */
+void uuid_generate(uuid_t);
 
 /*
- * file_exists -- checks if file exists
+ * util_uuid_generate -- generate a uuid
+ *
+ * Uses the available FreeBSD uuid_generate library function.
  */
-static inline int
-file_exists(char const *file)
+int
+util_uuid_generate(uuid_t uuid)
 {
-	return access(file, F_OK);
+	uuid_generate(uuid);
+
+	return 0;
 }
-
-/*
- * find_last_set_64 -- returns last set bit position or -1 if set bit not found
- */
-static inline int
-find_last_set_64(uint64_t val)
-{
-	return 64 - __builtin_clzll(val) - 1;
-}
-#else
-
-#include <windows.h>
-#include <corecrt_io.h>
-#include <process.h>
-
-#define CREATE_MODE_RW (S_IWRITE | S_IREAD)
-
-/*
- * file_exists -- checks if file exists
- */
-static inline int
-file_exists(char const *file)
-{
-	return _access(file, 0);
-}
-
-/*
- * find_last_set_64 -- returns last set bit position or -1 if set bit not found
- */
-static inline int
-find_last_set_64(uint64_t val)
-{
-	DWORD lz = 0;
-
-	if (BitScanReverse64(&lz, val))
-		return (int)lz;
-	else
-		return -1;
-}
-#endif
-
-#ifdef __cplusplus
-}
-#endif
-#endif /* ex_common.h */
