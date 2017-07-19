@@ -29,6 +29,7 @@ and one command-line utility:
 * **pmempool** -- standalone tool for off-line pool management
 
 ><sup>1</sup> Not supported on FreeBSD.
+>
 ><sup>2</sup> Not supported on Windows.
 
 These libraries and utilities are described in more detail on the
@@ -37,9 +38,9 @@ and tutorials.
 
 **Currently, these libraries only work on 64-bit Linux, Windows<sup>3</sup> and 64-bit FreeBSD 11+<sup>4</sup>.**
 
->**<sup>3</sup> NVML for Windows is feature complete, but not yet considered production quality.**
-
->**<sup>4</sup> DAX and RDMA verbs are not yet supported in FreeBSD, so at this time NVML is available as a technical preview release.**
+><sup>3</sup> NVML for Windows is feature complete, but not yet considered production quality.
+>
+><sup>4</sup> DAX and RDMA verbs are not yet supported in FreeBSD, so at this time NVML is available as a technical preview release.
 
 ### Pre-Built Packages ###
 
@@ -93,7 +94,7 @@ required packages on the build system:
 * **gmake**
 * **ncurses<sup>5</sup>**
 
->**<sup>5</sup> The pkg version of ncurses is required for proper operation; the base version included in FreeBSD is not sufficient.**
+><sup>5</sup> The pkg version of ncurses is required for proper operation; the base version included in FreeBSD is not sufficient.
 
 Some tests and example applications require additional packages, but they
 do not interrupt building if they are missing. An appropriate message is
