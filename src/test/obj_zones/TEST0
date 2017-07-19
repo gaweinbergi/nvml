@@ -1,5 +1,6 @@
+#!/bin/bash -e
 #
-# Copyright 2016-2017, Intel Corporation
+# Copyright 2017, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -29,31 +30,24 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-#
-# pmempool_create/TEST1 -- test for creating pmemblk pool with btt layout
-#
-[CmdletBinding(PositionalBinding=$false)]
-Param(
-    [alias("d")]
-    $DIR = ""
-    )
-$Env:UNITTEST_NAME = "pmempool_create/TEST1"
-$Env:UNITTEST_NUM = "1"
 
+export UNITTEST_NAME=obj_zones/TEST0
+export UNITTEST_NUM=0
 
-. ..\unittest\unittest.ps1
+# standard unit test setup
+. ../unittest/unittest.sh
+
+# too large
+configure_valgrind force-disable
 
 require_test_type medium
 
-require_fs_type any
 setup
 
-$POOL="$DIR\file.pool"
+create_holey_file 64G $DIR/testfile1
 
-# PMEMBLK with layout
-expect_normal_exit $PMEMPOOL create -w blk 512 $POOL
-check_file $POOL
-check_signature PMEMBLK $POOL
-check_arena $POOL
+expect_normal_exit ./obj_zones$EXESUFFIX $DIR/testfile1
+
+check
 
 pass

@@ -1,5 +1,5 @@
 #
-# Copyright 2016-2017, Intel Corporation
+# Copyright 2017, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -29,31 +29,14 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
+
 #
-# pmempool_create/TEST1 -- test for creating pmemblk pool with btt layout
+# src/test/obj_zones/Makefile -- build obj_zones test
 #
-[CmdletBinding(PositionalBinding=$false)]
-Param(
-    [alias("d")]
-    $DIR = ""
-    )
-$Env:UNITTEST_NAME = "pmempool_create/TEST1"
-$Env:UNITTEST_NUM = "1"
+TARGET = obj_zones
+OBJS = obj_zones.o
 
+LIBPMEM=y
+LIBPMEMOBJ=y
 
-. ..\unittest\unittest.ps1
-
-require_test_type medium
-
-require_fs_type any
-setup
-
-$POOL="$DIR\file.pool"
-
-# PMEMBLK with layout
-expect_normal_exit $PMEMPOOL create -w blk 512 $POOL
-check_file $POOL
-check_signature PMEMBLK $POOL
-check_arena $POOL
-
-pass
+include ../Makefile.inc
