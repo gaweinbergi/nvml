@@ -83,7 +83,7 @@ $DIR_SRC/test/tools/fip/fip"
 if [ "$OSTYPE" = "FreeBSD" ]; then
 	DATE_CMD="gdate"
 	DD_CMD="gdd"
-	VM_OVERCOMMIT="sysctl vm.overcommit"
+	VM_OVERCOMMIT="[ $(sysctl vm.overcommit | awk '{print $2}') == 0 ]"
 	RM_ONEFS_OPT="-x"
 	STATMODE_OPT="-f%Lp"
 	STATPERM_OPT="-f%Sp"
@@ -93,7 +93,7 @@ if [ "$OSTYPE" = "FreeBSD" ]; then
 else
 	DATE_CMD="date"
 	DD_CMD="dd"
-	VM_OVERCOMMIT="cat /proc/sys/vm/overcommit_memory"
+	VM_OVERCOMMIT="[ $(cat /proc/sys/vm/overcommit_memory) != 2 ]"
 	RM_ONEFS_OPT="--one-file-system"
 	STATMODE_OPT="-c%a"
 	STATPERM_OPT="-c%A"
@@ -828,9 +828,7 @@ function check_pools() {
 # - unlimited virtual memory (ulimit -v is unlimited)
 #
 function require_unlimited_vm() {
-	local overcommit=$($VM_OVERCOMMIT)
-	local vm_limit=$(ulimit -v)
-	[ "$overcommit" != "2" ] && [ "$vm_limit" = "unlimited" ] && return
+	$VM_OVERCOMMIT && [ $(ulimit -v) = "unlimited" ] && return
 	echo "$UNITTEST_NAME: SKIP required: overcommit_memory enabled and unlimited virtual memory"
 	exit 0
 }

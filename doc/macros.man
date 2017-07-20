@@ -65,7 +65,7 @@
 #		Define U and W prototypes of ret_type func_name if WIN32.
 #		Two char/wchar_t arguments are char_arg1-2. Bracket
 #		rest_of_args string with (_q_, _e_) if it is a comma-separated
-#		list). Comment is added after prototype definition if present.
+#		list. Comment is added after prototype definition if present.
 #	_UWFUNCR1UW(ret_type, func_name, arg1_type, arg1, rest_of_args):
 #		Define U and W prototypes of ret_type func_name, append [U/W]
 #		to arg1_type arg1. Bracket rest_of_args string with (_q_, _e_)
