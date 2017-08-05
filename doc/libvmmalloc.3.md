@@ -157,6 +157,7 @@ In case of large memory pools, creating a copy of the pool file may stall the fo
 + **3** - The library first attempts to create a copy of the memory pool (as for option #2), but if it fails (i.e. because of insufficient amount of free space
 on the file system), it will fall back to option #1.
 
+>NOTE: Options **2** and **3** are not currently supported on FreeBSD.
 
 # CAVEATS #
 
