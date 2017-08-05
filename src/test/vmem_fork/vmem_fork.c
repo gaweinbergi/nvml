@@ -81,7 +81,8 @@ do_test(void *arg)
 	}
 
 	for (int j = 0; j < NBUFS; j++) {
-		UT_ASSERT(vmem_malloc_usable_size(a->vmp, bufs[j]) >= a->sizes[j]);
+		UT_ASSERT(vmem_malloc_usable_size(a->vmp, bufs[j]) >=
+			a->sizes[j]);
 		vmem_free(a->vmp, bufs[j]);
 	}
 
