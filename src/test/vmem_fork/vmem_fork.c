@@ -180,18 +180,16 @@ main(int argc, char *argv[])
 			*bufs[i * NBUFS + j] = ((unsigned)pids2[i] << 16) + j;
 		}
 
-		if (pids1[i]) {
-			/* parent */
-			for (int t = 0; t < nthread; ++t) {
+		for (int t = 0; t < nthread; ++t) {
+			if (pids1[i]) {	/* parent */
 				PTHREAD_JOIN(thread[t], NULL);
-				vmem_free(vmp, targs[t]);
 			}
-
-			vmem_free(vmp, targs);
-		} else {
-			/* child */
+			vmem_free(vmp, targs[t]);
+		}
+		if (!pids1[i]) {	/* child */
 			first_child = i + 1;
 		}
+		vmem_free(vmp, targs);
 
 		for (int ii = 0; ii < i; ii++) {
 			for (int j = 0; j < NBUFS; j++) {
