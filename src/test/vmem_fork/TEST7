@@ -32,9 +32,9 @@
 #
 
 #
-# src/test/vmem_fork/TEST5 -- unit test for libvmem fork() with helgrind
+# src/test/vmem_fork/TEST7 -- unit test for libvmem fork() with drd
 #
-export UNITTEST_NUM=5
+export UNITTEST_NUM=7
 export UNITTEST_NAME=vmem_fork/TEST$UNITTEST_NUM
 
 # standard unit test setup
@@ -42,9 +42,8 @@ export UNITTEST_NAME=vmem_fork/TEST$UNITTEST_NUM
 
 require_test_type medium
 require_fs_type any
-export VALGRIND_OPTS="--suppressions=helgrind.supp"
 require_valgrind_dev_version 3.10
-configure_valgrind helgrind force-enable
+configure_valgrind drd force-enable
 
 setup
 

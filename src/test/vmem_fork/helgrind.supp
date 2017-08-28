@@ -1,0 +1,16 @@
+{
+helgrind_do_global_dtors_aux
+   Helgrind:Race
+   ...
+   fun:__do_global_dtors_aux
+   ...
+   fun:exit
+}
+{
+helgrind_prefork_lockorder
+   Helgrind:LockOrder
+   ...
+   fun:je_vmem_je_jemalloc_prefork
+   obj:/lib/libthr.so.3
+   fun:main
+}
