@@ -42,6 +42,7 @@ export UNITTEST_NAME=vmem_fork/TEST$UNITTEST_NUM
 
 require_test_type medium
 require_fs_type any
+export VALGRIND_OPTS="--suppressions=drd.supp"
 require_valgrind_dev_version 3.10
 configure_valgrind drd force-enable
 
