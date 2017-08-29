@@ -22,6 +22,18 @@ helgrind_vmem_pool_malloc
    fun:start_thread
    fun:clone
 }
+# XXX
+{
+helgrind_pool_ifree
+   Helgrind:Race
+   fun:pool_ifree
+   fun:je_vmem_pool_free
+   fun:vmem_free
+   fun:do_test
+   fun:mythread_wrapper
+   fun:start_thread
+   fun:clone
+}
 {
 helgrind_exit
    Helgrind:Race
