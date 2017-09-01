@@ -38,11 +38,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include <assert.h>
-#ifdef __FreeBSD__
-#include <sys/endian.h>
-#else
 #include <endian.h>
-#endif
 #include "convert.h"
 
 static void *poolset;

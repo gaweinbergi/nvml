@@ -39,11 +39,7 @@
 #include <string.h>
 #include <err.h>
 #include <sys/param.h>
-#ifdef __FreeBSD__
-#include <sys/endian.h>
-#else
 #include <endian.h>
-#endif
 
 #include "os.h"
 #include "common.h"

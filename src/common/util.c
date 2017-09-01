@@ -38,11 +38,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#ifdef __FreeBSD__
-#include <sys/endian.h>
-#else
 #include <endian.h>
-#endif
 #include <errno.h>
 #include <time.h>
 

@@ -39,11 +39,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <fcntl.h>
-#ifdef __FreeBSD__
-#include <sys/endian.h>
-#else
 #include <endian.h>
-#endif
 
 #ifndef _WIN32
 #include <sys/ioctl.h>

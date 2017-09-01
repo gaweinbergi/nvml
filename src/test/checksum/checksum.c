@@ -36,11 +36,7 @@
  * usage: checksum files...
  */
 
-#ifdef __FreeBSD__
-#include <sys/endian.h>
-#else
 #include <endian.h>
-#endif
 #include "unittest.h"
 #include "util.h"
 #include <inttypes.h>
