@@ -34,7 +34,7 @@
 # examples/Makefile -- build the NVM Library examples
 #
 
-DIRS = xlibpmem libpmemblk libpmemlog libpmemobj libvmem librpmem\
+DIRS = libpmem libpmemblk libpmemlog libpmemobj libvmem librpmem\
 	libpmempool
 
 include Makefile.inc
