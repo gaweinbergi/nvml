@@ -60,8 +60,14 @@ typedef union {
 	char padding[48]; /* linux: 48 windows: 12 */
 } os_cond_t;
 
+typedef union {
+	long long align;  /* linux: long windows: 8 FreeBSD: 12 */
+	char padding[16]; /* 16 to be safe */
+} os_once_t;
+
+#define OS_ONCE_INIT { .padding = {0} }
+
 typedef uintptr_t os_thread_t;
-typedef long long os_once_t; /* long on linux */
 typedef unsigned os_tls_key_t;
 
 typedef union {
@@ -79,9 +85,13 @@ typedef union {
 	char padding[512];
 } os_cpu_set_t;
 
+#ifdef __FreeBSD__
+#define cpu_set_t cpuset_t
+typedef uintptr_t os_spinlock_t;
+#else
 typedef volatile int os_spinlock_t; /* XXX: not implemented on windows */
+#endif
 
-#define OS_ONCE_INIT 0
 void os_cpu_zero(os_cpu_set_t *set);
 void os_cpu_set(size_t cpu, os_cpu_set_t *set);
 

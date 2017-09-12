@@ -49,7 +49,7 @@
 int
 util_get_arch_flags(struct arch_flags *arch_flags)
 {
-	char *path = "/proc/self/exe";
+	const char *path = ELF_FILE_NAME;
 	int fd;
 	ElfW(Ehdr) elf;
 	int ret = 0;
