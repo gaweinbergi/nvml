@@ -45,6 +45,7 @@ extern "C" {
 #include <stdio.h>
 #include <unistd.h>
 
+#include "errno_freebsd.h"
 
 #ifndef _WIN32
 #define OS_DIR_SEPARATOR '/'
@@ -53,6 +54,31 @@ extern "C" {
 #define OS_DIR_SEPARATOR '\\'
 #define OS_DIR_SEP_STR "\\"
 #endif
+
+#ifndef _WIN32
+
+/* ELF and /proc */
+#ifdef __FreeBSD__
+#include <elf.h>
+#if __ELF_WORD_SIZE == 32
+#define ElfW(type) Elf32_##type
+#else
+#define ElfW(type) Elf64_##type
+#endif
+#define ELF_FILE_NAME "/proc/curproc/file"
+#else
+#define ELF_FILE_NAME "/proc/self/exe"
+#endif
+
+/* madvise() */
+#ifdef __FreeBSD__
+#define MADVISE minherit
+#define MADV_DONTFORK INHERIT_NONE
+#else
+#define MADVISE madvise
+#endif
+
+#endif /* #ifndef _WIN32 */
 
 struct iovec;
 

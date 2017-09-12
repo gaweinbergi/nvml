@@ -43,58 +43,25 @@
 #include "sys_util.h"
 #include "valgrind_internal.h"
 
-#define GET_MUTEX(pop, mutexp)\
-get_lock((pop)->run_id,\
-	&(mutexp)->pmemmutex.runid,\
-	&(mutexp)->pmemmutex.mutex,\
-	(void *)os_mutex_init,\
-	sizeof((mutexp)->pmemmutex.mutex))
-
-#define GET_RWLOCK(pop, rwlockp)\
-get_lock((pop)->run_id,\
-	&(rwlockp)->pmemrwlock.runid,\
-	&(rwlockp)->pmemrwlock.rwlock,\
-	(void *)os_rwlock_init,\
-	sizeof((rwlockp)->pmemrwlock.rwlock))
-
-
-#define GET_COND(pop, condp)\
-get_lock((pop)->run_id,\
-	&(condp)->pmemcond.runid,\
-	&(condp)->pmemcond.cond,\
-	(void *)os_cond_init,\
-	sizeof((condp)->pmemcond.cond))
+#ifdef __FreeBSD__
+#define RECORD_LOCK(type, p) \
+	PMEM##type##_internal *head = pop->type##_head;\
+	while (!util_bool_compare_and_swap64(&pop->type##_head, head, p)) {\
+		head = pop->type##_head;\
+	}\
+	p->PMEM##type##_next = head
+#else
+#define RECORD_LOCK(type, p)
+#endif
 
 /*
  * _get_lock -- (internal) atomically initialize and return a lock
  */
 static void *
 _get_lock(uint64_t pop_runid, volatile uint64_t *runid, void *lock,
-	int (*init_lock)(void *lock, void *arg), size_t size)
+	int (*init_lock)(void *lock, void *arg))
 {
-	LOG(15, "pop_runid %" PRIu64 " runid %" PRIu64 " lock %p init_lock %p",
-		pop_runid, *runid, lock, init_lock);
-
-	ASSERTeq((uintptr_t)runid % util_alignof(uint64_t), 0);
-
-	COMPILE_ERROR_ON(sizeof(PMEMmutex)
-		!= sizeof(PMEMmutex_internal));
-	COMPILE_ERROR_ON(sizeof(PMEMrwlock)
-		!= sizeof(PMEMrwlock_internal));
-	COMPILE_ERROR_ON(sizeof(PMEMcond)
-		!= sizeof(PMEMcond_internal));
-
-	COMPILE_ERROR_ON(util_alignof(PMEMmutex)
-		!= util_alignof(os_mutex_t));
-	COMPILE_ERROR_ON(util_alignof(PMEMrwlock)
-		!= util_alignof(os_rwlock_t));
-	COMPILE_ERROR_ON(util_alignof(PMEMcond)
-		!= util_alignof(os_cond_t));
-
 	uint64_t tmp_runid;
-
-	VALGRIND_REMOVE_PMEM_MAPPING(runid, sizeof(*runid));
-	VALGRIND_REMOVE_PMEM_MAPPING(lock, size);
 
 	while ((tmp_runid = *runid) != pop_runid) {
 		if (tmp_runid == pop_runid - 1)
@@ -121,16 +88,99 @@ _get_lock(uint64_t pop_runid, volatile uint64_t *runid, void *lock,
 }
 
 /*
- * get_lock -- (internal) atomically initialize and return a lock
+ * get_mutex -- (internal) atomically initialize, record and return a mutex
  */
-static inline void *
-get_lock(uint64_t pop_runid, volatile uint64_t *runid, void *lock,
-	int (*init_lock)(void *lock, void *arg), size_t size)
+static inline os_mutex_t *
+get_mutex(PMEMobjpool *pop, PMEMmutex_internal *imp)
 {
-	if (likely(*runid == pop_runid))
-		return lock;
+	if (likely(imp->pmemmutex.runid == pop->run_id))
+		return &imp->PMEMmutex_lock;
 
-	return _get_lock(pop_runid, runid, lock, init_lock, size);
+	volatile uint64_t *runid = &imp->pmemmutex.runid;
+
+	LOG(5, "PMEMmutex %p pop->run_id %" PRIu64 " pmemmutex.runid %" PRIu64,
+		imp, pop->run_id, *runid);
+
+	ASSERTeq((uintptr_t)runid % util_alignof(uint64_t), 0);
+
+	COMPILE_ERROR_ON(sizeof(PMEMmutex) != sizeof(PMEMmutex_internal));
+	COMPILE_ERROR_ON(util_alignof(PMEMmutex) != util_alignof(os_mutex_t));
+
+	VALGRIND_REMOVE_PMEM_MAPPING(imp, _POBJ_CL_SIZE);
+
+	if (_get_lock(pop->run_id, runid, &imp->PMEMmutex_lock,
+		(void *)os_mutex_init) == NULL) {
+		return NULL;
+	}
+
+	RECORD_LOCK(mutex, imp);
+
+	return &imp->PMEMmutex_lock;
+}
+
+/*
+ * get_rwlock -- (internal) atomically initialize, record and return a rwlock
+ */
+static inline os_rwlock_t *
+get_rwlock(PMEMobjpool *pop, PMEMrwlock_internal *irp)
+{
+	if (likely(irp->pmemrwlock.runid == pop->run_id))
+		return &irp->PMEMrwlock_lock;
+
+	volatile uint64_t *runid = &irp->pmemrwlock.runid;
+
+	LOG(5, "PMEMrwlock %p pop->run_id %"\
+		PRIu64 " pmemrwlock.runid %" PRIu64,
+		irp, pop->run_id, *runid);
+
+	ASSERTeq((uintptr_t)runid % util_alignof(uint64_t), 0);
+
+	COMPILE_ERROR_ON(sizeof(PMEMrwlock) != sizeof(PMEMrwlock_internal));
+	COMPILE_ERROR_ON(util_alignof(PMEMrwlock)
+		!= util_alignof(os_rwlock_t));
+
+	VALGRIND_REMOVE_PMEM_MAPPING(irp, _POBJ_CL_SIZE);
+
+	if (_get_lock(pop->run_id, runid, &irp->PMEMrwlock_lock,
+		(void *)os_rwlock_init) == NULL) {
+		return NULL;
+	}
+
+	RECORD_LOCK(rwlock, irp);
+
+	return &irp->PMEMrwlock_lock;
+}
+
+/*
+ * get_cond -- (internal) atomically initialize, record and return a
+ *	condition variable
+ */
+static inline os_cond_t *
+get_cond(PMEMobjpool *pop, PMEMcond_internal *icp)
+{
+	if (likely(icp->pmemcond.runid == pop->run_id))
+		return &icp->PMEMcond_cond;
+
+	volatile uint64_t *runid = &icp->pmemcond.runid;
+
+	LOG(5, "PMEMcond %p pop->run_id %" PRIu64 " pmemcond.runid %" PRIu64,
+		icp, pop->run_id, *runid);
+
+	ASSERTeq((uintptr_t)runid % util_alignof(uint64_t), 0);
+
+	COMPILE_ERROR_ON(sizeof(PMEMcond) != sizeof(PMEMcond_internal));
+	COMPILE_ERROR_ON(util_alignof(PMEMcond) != util_alignof(os_cond_t));
+
+	VALGRIND_REMOVE_PMEM_MAPPING(icp, _POBJ_CL_SIZE);
+
+	if (_get_lock(pop->run_id, runid, &icp->PMEMcond_cond,
+		(void *)os_cond_init) == NULL) {
+		return NULL;
+	}
+
+	RECORD_LOCK(cond, icp);
+
+	return &icp->PMEMcond_cond;
 }
 
 /*
@@ -165,7 +215,7 @@ pmemobj_mutex_lock(PMEMobjpool *pop, PMEMmutex *mutexp)
 	ASSERTeq(pop, pmemobj_pool_by_ptr(mutexp));
 
 	PMEMmutex_internal *mutexip = (PMEMmutex_internal *)mutexp;
-	os_mutex_t *mutex = GET_MUTEX(pop, mutexip);
+	os_mutex_t *mutex = get_mutex(pop, mutexip);
 
 	if (mutex == NULL)
 		return EINVAL;
@@ -188,7 +238,7 @@ pmemobj_mutex_assert_locked(PMEMobjpool *pop, PMEMmutex *mutexp)
 	ASSERTeq(pop, pmemobj_pool_by_ptr(mutexp));
 
 	PMEMmutex_internal *mutexip = (PMEMmutex_internal *)mutexp;
-	os_mutex_t *mutex = GET_MUTEX(pop, mutexip);
+	os_mutex_t *mutex = get_mutex(pop, mutexip);
 	if (mutex == NULL)
 		return EINVAL;
 
@@ -223,7 +273,7 @@ pmemobj_mutex_timedlock(PMEMobjpool *pop, PMEMmutex *__restrict mutexp,
 	ASSERTeq(pop, pmemobj_pool_by_ptr(mutexp));
 
 	PMEMmutex_internal *mutexip = (PMEMmutex_internal *)mutexp;
-	os_mutex_t *mutex = GET_MUTEX(pop, mutexip);
+	os_mutex_t *mutex = get_mutex(pop, mutexip);
 	if (mutex == NULL)
 		return EINVAL;
 
@@ -246,7 +296,7 @@ pmemobj_mutex_trylock(PMEMobjpool *pop, PMEMmutex *mutexp)
 	ASSERTeq(pop, pmemobj_pool_by_ptr(mutexp));
 
 	PMEMmutex_internal *mutexip = (PMEMmutex_internal *)mutexp;
-	os_mutex_t *mutex = GET_MUTEX(pop, mutexip);
+	os_mutex_t *mutex = get_mutex(pop, mutexip);
 	if (mutex == NULL)
 		return EINVAL;
 
@@ -267,7 +317,7 @@ pmemobj_mutex_unlock(PMEMobjpool *pop, PMEMmutex *mutexp)
 
 	/* XXX potential performance improvement - move GET to debug version */
 	PMEMmutex_internal *mutexip = (PMEMmutex_internal *)mutexp;
-	os_mutex_t *mutex = GET_MUTEX(pop, mutexip);
+	os_mutex_t *mutex = get_mutex(pop, mutexip);
 	if (mutex == NULL)
 		return EINVAL;
 
@@ -308,7 +358,7 @@ pmemobj_rwlock_rdlock(PMEMobjpool *pop, PMEMrwlock *rwlockp)
 	ASSERTeq(pop, pmemobj_pool_by_ptr(rwlockp));
 
 	PMEMrwlock_internal *rwlockip = (PMEMrwlock_internal *)rwlockp;
-	os_rwlock_t *rwlock = GET_RWLOCK(pop, rwlockip);
+	os_rwlock_t *rwlock = get_rwlock(pop, rwlockip);
 	if (rwlock == NULL)
 		return EINVAL;
 
@@ -331,7 +381,7 @@ pmemobj_rwlock_wrlock(PMEMobjpool *pop, PMEMrwlock *rwlockp)
 	ASSERTeq(pop, pmemobj_pool_by_ptr(rwlockp));
 
 	PMEMrwlock_internal *rwlockip = (PMEMrwlock_internal *)rwlockp;
-	os_rwlock_t *rwlock = GET_RWLOCK(pop, rwlockip);
+	os_rwlock_t *rwlock = get_rwlock(pop, rwlockip);
 	if (rwlock == NULL)
 		return EINVAL;
 
@@ -356,7 +406,7 @@ pmemobj_rwlock_timedrdlock(PMEMobjpool *pop, PMEMrwlock *__restrict rwlockp,
 	ASSERTeq(pop, pmemobj_pool_by_ptr(rwlockp));
 
 	PMEMrwlock_internal *rwlockip = (PMEMrwlock_internal *)rwlockp;
-	os_rwlock_t *rwlock = GET_RWLOCK(pop, rwlockip);
+	os_rwlock_t *rwlock = get_rwlock(pop, rwlockip);
 	if (rwlock == NULL)
 		return EINVAL;
 
@@ -381,7 +431,7 @@ pmemobj_rwlock_timedwrlock(PMEMobjpool *pop, PMEMrwlock *__restrict rwlockp,
 	ASSERTeq(pop, pmemobj_pool_by_ptr(rwlockp));
 
 	PMEMrwlock_internal *rwlockip = (PMEMrwlock_internal *)rwlockp;
-	os_rwlock_t *rwlock = GET_RWLOCK(pop, rwlockip);
+	os_rwlock_t *rwlock = get_rwlock(pop, rwlockip);
 	if (rwlock == NULL)
 		return EINVAL;
 
@@ -404,7 +454,7 @@ pmemobj_rwlock_tryrdlock(PMEMobjpool *pop, PMEMrwlock *rwlockp)
 	ASSERTeq(pop, pmemobj_pool_by_ptr(rwlockp));
 
 	PMEMrwlock_internal *rwlockip = (PMEMrwlock_internal *)rwlockp;
-	os_rwlock_t *rwlock = GET_RWLOCK(pop, rwlockip);
+	os_rwlock_t *rwlock = get_rwlock(pop, rwlockip);
 	if (rwlock == NULL)
 		return EINVAL;
 
@@ -427,7 +477,7 @@ pmemobj_rwlock_trywrlock(PMEMobjpool *pop, PMEMrwlock *rwlockp)
 	ASSERTeq(pop, pmemobj_pool_by_ptr(rwlockp));
 
 	PMEMrwlock_internal *rwlockip = (PMEMrwlock_internal *)rwlockp;
-	os_rwlock_t *rwlock = GET_RWLOCK(pop, rwlockip);
+	os_rwlock_t *rwlock = get_rwlock(pop, rwlockip);
 	if (rwlock == NULL)
 		return EINVAL;
 
@@ -448,7 +498,7 @@ pmemobj_rwlock_unlock(PMEMobjpool *pop, PMEMrwlock *rwlockp)
 
 	/* XXX potential performance improvement - move GET to debug version */
 	PMEMrwlock_internal *rwlockip = (PMEMrwlock_internal *)rwlockp;
-	os_rwlock_t *rwlock = GET_RWLOCK(pop, rwlockip);
+	os_rwlock_t *rwlock = get_rwlock(pop, rwlockip);
 	if (rwlock == NULL)
 		return EINVAL;
 
@@ -489,7 +539,7 @@ pmemobj_cond_broadcast(PMEMobjpool *pop, PMEMcond *condp)
 	ASSERTeq(pop, pmemobj_pool_by_ptr(condp));
 
 	PMEMcond_internal *condip = (PMEMcond_internal *)condp;
-	os_cond_t *cond = GET_COND(pop, condip);
+	os_cond_t *cond = get_cond(pop, condip);
 	if (cond == NULL)
 		return EINVAL;
 
@@ -512,7 +562,7 @@ pmemobj_cond_signal(PMEMobjpool *pop, PMEMcond *condp)
 	ASSERTeq(pop, pmemobj_pool_by_ptr(condp));
 
 	PMEMcond_internal *condip = (PMEMcond_internal *)condp;
-	os_cond_t *cond = GET_COND(pop, condip);
+	os_cond_t *cond = get_cond(pop, condip);
 	if (cond == NULL)
 		return EINVAL;
 
@@ -540,8 +590,8 @@ pmemobj_cond_timedwait(PMEMobjpool *pop, PMEMcond *__restrict condp,
 
 	PMEMcond_internal *condip = (PMEMcond_internal *)condp;
 	PMEMmutex_internal *mutexip = (PMEMmutex_internal *)mutexp;
-	os_cond_t *cond = GET_COND(pop, condip);
-	os_mutex_t *mutex = GET_MUTEX(pop, mutexip);
+	os_cond_t *cond = get_cond(pop, condip);
+	os_mutex_t *mutex = get_mutex(pop, mutexip);
 	if ((cond == NULL) || (mutex == NULL))
 		return EINVAL;
 
@@ -568,8 +618,8 @@ pmemobj_cond_wait(PMEMobjpool *pop, PMEMcond *condp,
 
 	PMEMcond_internal *condip = (PMEMcond_internal *)condp;
 	PMEMmutex_internal *mutexip = (PMEMmutex_internal *)mutexp;
-	os_cond_t *cond = GET_COND(pop, condip);
-	os_mutex_t *mutex = GET_MUTEX(pop, mutexip);
+	os_cond_t *cond = get_cond(pop, condip);
+	os_mutex_t *mutex = get_mutex(pop, mutexip);
 	if ((cond == NULL) || (mutex == NULL))
 		return EINVAL;
 

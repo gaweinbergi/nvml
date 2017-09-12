@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016, Intel Corporation
+ * Copyright 2014-2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,7 +36,7 @@
  * usage: vmmalloc_init [d|l]
  */
 
-#include <malloc.h>
+#include <stdlib.h>
 #include <dlfcn.h>
 #include "unittest.h"
 
@@ -56,9 +56,14 @@ main(int argc, char *argv[])
 	if (argc == 2) {
 		switch (argv[1][0]) {
 		case 'd':
+#ifdef __FreeBSD__
+			UT_OUT("FreeBSD does not support RTLD_DEEPBIND");
+			handle = dlopen("./libtest.so", RTLD_NOW | RTLD_LOCAL);
+#else
 			UT_OUT("deep binding");
 			handle = dlopen("./libtest.so",
 				RTLD_NOW | RTLD_LOCAL | RTLD_DEEPBIND);
+#endif
 			break;
 		case 'l':
 			UT_OUT("lazy binding");

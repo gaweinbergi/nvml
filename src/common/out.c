@@ -175,11 +175,7 @@ getexecname(void)
 	ssize_t cc;
 
 #ifndef _WIN32
-	char procpath[PATH_MAX];
-
-	snprintf(procpath, PATH_MAX, "/proc/%d/exe", getpid());
-
-	if ((cc = readlink(procpath, namepath, PATH_MAX)) < 0)
+	if ((cc = readlink(ELF_FILE_NAME, namepath, PATH_MAX)) < 0)
 #else
 	if ((cc = GetModuleFileNameA(NULL, namepath, PATH_MAX)) == 0)
 #endif
@@ -190,6 +186,46 @@ getexecname(void)
 	return namepath;
 }
 #endif	/* DEBUG */
+
+#ifndef _WIN32
+/*
+ * out_prefork -- lock output file prior to fork. This prevents any
+ *	running threads (which will not be duplicated in the child)
+ *	from holding the output file lock and deadlocking the child.
+ */
+static void
+out_prefork(void)
+{
+	if (Out_fp != NULL) {
+		flockfile(Out_fp);
+	}
+}
+
+/*
+ * out_postfork_parent -- unlock output file after fork
+ */
+static void
+out_postfork_parent(void)
+{
+	if (Out_fp != NULL) {
+		funlockfile(Out_fp);
+	}
+}
+
+/*
+ * out_postfork_child -- unlock output file after fork
+ */
+static void
+out_postfork_child(void)
+{
+/* Handled by standard library on Linux */
+#ifdef __FreeBSD__
+	if (Out_fp != NULL) {
+		funlockfile(Out_fp);
+	}
+#endif
+}
+#endif
 
 /*
  * out_init -- initialize the log
@@ -259,6 +295,14 @@ out_init(const char *log_prefix, const char *log_level_var,
 		Out_fp = stderr;
 	else
 		setlinebuf(Out_fp);
+
+#ifndef _WIN32
+	if (os_thread_atfork(out_prefork, out_postfork_parent,
+		out_postfork_child)) {
+		ERR("!os_thread_atfork");
+		abort();
+	}
+#endif
 
 #ifdef DEBUG
 	LOG(1, "pid %d: program: %s", getpid(), getexecname());

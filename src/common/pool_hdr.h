@@ -38,6 +38,7 @@
 #define NVML_POOL_HDR_H 1
 
 #include <stdint.h>
+#include "os.h"
 #include "uuid.h"
 
 /*

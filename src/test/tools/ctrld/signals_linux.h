@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017, Intel Corporation
+ * Copyright 2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,75 +31,45 @@
  */
 
 /*
- * ex_common.h -- examples utilities
+ * signals_linux.h - Signal definitions for Linux
  */
-#ifndef EX_COMMON_H
-#define EX_COMMON_H
+#ifndef _SIGNALS_LINUX_H
+#define _SIGNALS_LINUX_H 1
 
-#include <stdint.h>
+#define SIGNAL_2_STR(sig) [sig] = #sig
+static const char *signal2str[] = {
+	SIGNAL_2_STR(SIGHUP),	/*  1 */
+	SIGNAL_2_STR(SIGINT),	/*  2 */
+	SIGNAL_2_STR(SIGQUIT),	/*  3 */
+	SIGNAL_2_STR(SIGILL),	/*  4 */
+	SIGNAL_2_STR(SIGTRAP),	/*  5 */
+	SIGNAL_2_STR(SIGABRT),	/*  6 */
+	SIGNAL_2_STR(SIGBUS),	/*  7 */
+	SIGNAL_2_STR(SIGFPE),	/*  8 */
+	SIGNAL_2_STR(SIGKILL),	/*  9 */
+	SIGNAL_2_STR(SIGUSR1),	/* 10 */
+	SIGNAL_2_STR(SIGSEGV),	/* 11 */
+	SIGNAL_2_STR(SIGUSR2),	/* 12 */
+	SIGNAL_2_STR(SIGPIPE),	/* 13 */
+	SIGNAL_2_STR(SIGALRM),	/* 14 */
+	SIGNAL_2_STR(SIGTERM),	/* 15 */
+	SIGNAL_2_STR(SIGSTKFLT), /* 16 */
+	SIGNAL_2_STR(SIGCHLD),	/* 17 */
+	SIGNAL_2_STR(SIGCONT),	/* 18 */
+	SIGNAL_2_STR(SIGSTOP),	/* 19 */
+	SIGNAL_2_STR(SIGTSTP),	/* 20 */
+	SIGNAL_2_STR(SIGTTIN),	/* 21 */
+	SIGNAL_2_STR(SIGTTOU),	/* 22 */
+	SIGNAL_2_STR(SIGURG),	/* 23 */
+	SIGNAL_2_STR(SIGXCPU),	/* 24 */
+	SIGNAL_2_STR(SIGXFSZ),	/* 25 */
+	SIGNAL_2_STR(SIGVTALRM), /* 26 */
+	SIGNAL_2_STR(SIGPROF),	/* 27 */
+	SIGNAL_2_STR(SIGWINCH),	/* 28 */
+	SIGNAL_2_STR(SIGPOLL),	/* 29 */
+	SIGNAL_2_STR(SIGPWR),	/* 30 */
+	SIGNAL_2_STR(SIGSYS)	/* 31 */
+};
+#define SIGNALMAX SIGSYS
 
-#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
-
-#ifdef __cplusplus
-extern "C" {
 #endif
-
-#ifndef _WIN32
-
-#include <unistd.h>
-
-#define CREATE_MODE_RW (S_IWUSR | S_IRUSR)
-
-/*
- * file_exists -- checks if file exists
- */
-static inline int
-file_exists(char const *file)
-{
-	return access(file, F_OK);
-}
-
-/*
- * find_last_set_64 -- returns last set bit position or -1 if set bit not found
- */
-static inline int
-find_last_set_64(uint64_t val)
-{
-	return 64 - __builtin_clzll(val) - 1;
-}
-#else
-
-#include <windows.h>
-#include <corecrt_io.h>
-#include <process.h>
-
-#define CREATE_MODE_RW (S_IWRITE | S_IREAD)
-
-/*
- * file_exists -- checks if file exists
- */
-static inline int
-file_exists(char const *file)
-{
-	return _access(file, 0);
-}
-
-/*
- * find_last_set_64 -- returns last set bit position or -1 if set bit not found
- */
-static inline int
-find_last_set_64(uint64_t val)
-{
-	DWORD lz = 0;
-
-	if (BitScanReverse64(&lz, val))
-		return (int)lz;
-	else
-		return -1;
-}
-#endif
-
-#ifdef __cplusplus
-}
-#endif
-#endif /* ex_common.h */

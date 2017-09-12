@@ -95,6 +95,14 @@ ctl_find_node(struct ctl_node *nodes, const char *name,
 	while (node_name != NULL) {
 		char *endptr;
 		long index_value = strtol(node_name, &endptr, 0);
+#ifdef __FreeBSD__
+/*
+ * FreeBSD returns EINVAL if no conversion performed, Linux does not.
+ * XXX - Other errors are possible, but are not checked.
+ */
+		if (errno == EINVAL)
+			errno = 0;
+#endif
 		struct ctl_index *index_entry = NULL;
 		if (endptr != node_name) { /* a valid index */
 			index_entry = Malloc(sizeof(*index_entry));

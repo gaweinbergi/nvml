@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016, Intel Corporation
+ * Copyright 2015-2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,7 +41,6 @@
 #include "pool_hdr.h"
 #include "pmemcommon.h"
 
-#define ELF_FILE_NAME "/proc/self/exe"
 #define FATAL_USAGE()\
 UT_FATAL("usage: arch_flags <file>:<err>:<alignemnt_desc>:<reserved> <file>")
 #define ARCH_FLAGS_LOG_PREFIX "arch_flags"
