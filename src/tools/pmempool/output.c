@@ -802,20 +802,17 @@ const char *
 out_get_e_machine_str(uint16_t e_machine)
 {
 	static char str_buff[STR_MAX] = {0, };
+	int ret;
 	switch (e_machine) {
 	case EM_NONE:
 		return "none";
 	case EM_X86_64:
 		return "AMD X86-64";
 	default:
-		if (e_machine >= EM_NUM) {
-			return "unknown";
-		} else {
-			int ret = snprintf(str_buff, STR_MAX, "%u", e_machine);
-			if (ret < 0 || ret >= STR_MAX)
-				return "";
-			return str_buff;
-		}
+		ret = snprintf(str_buff, STR_MAX, "unknown %u", e_machine);
+		if (ret < 0 || ret >= STR_MAX)
+			return "";
+		return str_buff;
 	}
 }
 

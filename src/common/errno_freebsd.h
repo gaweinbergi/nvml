@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017, Intel Corporation
+ * Copyright 2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,75 +31,18 @@
  */
 
 /*
- * ex_common.h -- examples utilities
+ * errno_freebsd.h -- map Linux errno's to something close on FreeBSD
  */
-#ifndef EX_COMMON_H
-#define EX_COMMON_H
 
-#include <stdint.h>
+#ifndef NVML_ERRNO_FREEBSD_H
+#define NVML_ERRNO_FREEBSD_H 1
 
-#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
-
-#ifdef __cplusplus
-extern "C" {
+#ifdef __FreeBSD__
+#define EBADFD EBADF
+#define ELIBACC EINVAL
+#define EMEDIUMTYPE EOPNOTSUPP
+#define ENOMEDIUM ENODEV
+#define EREMOTEIO EIO
 #endif
 
-#ifndef _WIN32
-
-#include <unistd.h>
-
-#define CREATE_MODE_RW (S_IWUSR | S_IRUSR)
-
-/*
- * file_exists -- checks if file exists
- */
-static inline int
-file_exists(char const *file)
-{
-	return access(file, F_OK);
-}
-
-/*
- * find_last_set_64 -- returns last set bit position or -1 if set bit not found
- */
-static inline int
-find_last_set_64(uint64_t val)
-{
-	return 64 - __builtin_clzll(val) - 1;
-}
-#else
-
-#include <windows.h>
-#include <corecrt_io.h>
-#include <process.h>
-
-#define CREATE_MODE_RW (S_IWRITE | S_IREAD)
-
-/*
- * file_exists -- checks if file exists
- */
-static inline int
-file_exists(char const *file)
-{
-	return _access(file, 0);
-}
-
-/*
- * find_last_set_64 -- returns last set bit position or -1 if set bit not found
- */
-static inline int
-find_last_set_64(uint64_t val)
-{
-	DWORD lz = 0;
-
-	if (BitScanReverse64(&lz, val))
-		return (int)lz;
-	else
-		return -1;
-}
-#endif
-
-#ifdef __cplusplus
-}
-#endif
-#endif /* ex_common.h */
+#endif /* NVML_ERRNO_FREEBSD_H */
