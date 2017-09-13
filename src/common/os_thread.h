@@ -86,10 +86,8 @@ typedef union {
 } os_cpu_set_t;
 
 #ifdef __FreeBSD__
-#include <pthread.h>
-#include <pthread_np.h>
-typedef pthread_spinlock_t os_spinlock_t;
-typedef cpuset_t cpu_set_t;
+#define cpu_set_t cpuset_t
+typedef uintptr_t os_spinlock_t;
 #else
 typedef volatile int os_spinlock_t; /* XXX: not implemented on windows */
 #endif
