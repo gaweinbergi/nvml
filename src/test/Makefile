@@ -274,7 +274,7 @@ VMMALLOC_TESTS = \
 	vmmalloc_realloc\
 	vmmalloc_valgrind\
 	vmmalloc_valloc
-ifneq ($(OSTYPE),FreeBSD)
+ifneq ($(shell uname -s),FreeBSD)
 	VMMALLOC_TESTS += vmmalloc_malloc_hooks	# No malloc hooks in FreeBSD
 endif
 
