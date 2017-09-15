@@ -240,7 +240,7 @@ To test the libraries with Valgrind, supply the compiler with the **USE_VG_\<TOO
 The **USE_VALGRIND** flag enables all Valgrind tools (drd, helgrind, memcheck and pmemcheck).
 
 The **SANITIZE** flag allows the libraries to be tested with various
-sanitizers. For example, to test the libraries with AddressSanitizer
+sanitizers<sup>9</sup>. For example, to test the libraries with AddressSanitizer
 and UndefinedBehaviorSanitizer, run:
 ```
 	$ make SANITIZE=address,undefined clobber check
@@ -264,6 +264,8 @@ For example, when using a custom version of libc++(version 3.9) installed to /us
 ```
 
 ><sup>8</sup> PM-aware Valgrind is not yet available for FreeBSD.
+>
+><sup>9</sup> The address sanitizer is not supported for libvmmalloc on FreeBSD and will be ignored.
 
 #### Building NVML on Windows ####
 
