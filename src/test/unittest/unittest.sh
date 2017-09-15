@@ -82,7 +82,7 @@ $DIR_SRC/test/tools/fip/fip"
 
 # Portability
 VALGRIND_SUPP="--suppressions=../ld.supp --suppressions=../memcheck-libunwind.supp"
-if [ "$OSTYPE" = "FreeBSD" ]; then
+if [ "$(uname -s)" = "FreeBSD" ]; then
 	DATE="gdate"
 	DD="gdd"
 	VM_OVERCOMMIT="[ $(sysctl vm.overcommit | awk '{print $2}') == 0 ]"
