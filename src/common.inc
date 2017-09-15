@@ -228,7 +228,7 @@ ifeq ($(shell uname -s),FreeBSD)
 GLIBC_CXXFLAGS=-D_GLIBCXX_USE_C99
 UNIX98_CFLAGS=
 OS_INCS=-I$(TOP)/src/freebsd/include -I/usr/local/include
-OS_LIBS=-L/usr/local/vg-pmem/lib -L/usr/local/lib
+OS_LIBS=-L/usr/local/lib
 LIBDL=
 LIBUTIL=-lutil
 LIBUUID=-luuid
