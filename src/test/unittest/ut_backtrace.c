@@ -133,20 +133,24 @@ ut_dump_backtrace(void)
 void
 ut_dump_backtrace(void)
 {
-	int j, nptrs;
+	size_t j, nptrs;
 	void *buffer[SIZE];
 	char **strings;
 
-	nptrs = backtrace(buffer, SIZE);
+	nptrs = (size_t) backtrace(buffer, SIZE);
 
-	strings = backtrace_symbols(buffer, nptrs);
+	/*
+	 * width reduction from size_t to int is OK unless we have 2**31 stack
+	 * frames ;)
+	 */
+	strings = backtrace_symbols(buffer, (int)nptrs);
 	if (strings == NULL) {
 		UT_ERR("!backtrace_symbols");
 		return;
 	}
 
 	for (j = 0; j < nptrs; j++)
-		UT_ERR("%u: %s", j, strings[j]);
+		UT_ERR("%lu: %s", j, strings[j]);
 
 	free(strings);
 }
