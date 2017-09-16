@@ -92,6 +92,7 @@ required packages on the build system:
 * **autoconf**
 * **bash**
 * **coreutils**
+* **e2fsprogs-libuuid**
 * **gmake**
 * **ncurses**<sup>4</sup>
 * **pkgconf**

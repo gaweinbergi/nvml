@@ -227,7 +227,7 @@ sparse-c = $(shell for c in *.c; do sparse -Wsparse-all -Wno-declaration-after-s
 ifeq ($(shell uname -s),FreeBSD)
 GLIBC_CXXFLAGS=-D_GLIBCXX_USE_C99
 UNIX98_CFLAGS=
-OS_INCS=-I$(TOP)/src/freebsd/include -I/usr/local/include
+OS_INCS=-I$(TOP)/src/freebsd/include -I/usr/local/vg-pmem/include -I/usr/local/include
 OS_LIBS=-L/usr/local/vg-pmem/lib -L/usr/local/lib
 LIBDL=
 LIBUTIL=-lutil

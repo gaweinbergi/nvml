@@ -63,6 +63,7 @@ drd_FreeBSD_libgcc_s.so.1
 {
 drd_FreeBSD_flockfile
    drd:ConflictingAccess
+   ...
    fun:flockfile
    ...
    obj:/lib/libthr.so.3
@@ -70,6 +71,7 @@ drd_FreeBSD_flockfile
 {
 helgrind_FreeBSD_flockfile
    Helgrind:Race
+   ...
    fun:flockfile
    ...
    obj:/lib/libthr.so.3
@@ -91,9 +93,7 @@ helgrind_FreeBSD_funlockfile
 {
 helgrind_FreeBSD__rtld_allocate_tls
    Helgrind:Race
-   obj:/lib/libthr.so.3
    ...
-   obj:/libexec/ld-elf.so.1
    fun:_rtld_allocate_tls
    ...
    fun:pthread_create
