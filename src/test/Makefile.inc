@@ -193,11 +193,13 @@ endif
 # in the unittest framework. It scans the code for functions that should be
 # wrapped and adds required linker flags.
 #
-WRAPPER_FUNCS=FUNC_MOCK_RET_ALWAYS|FUNC_MOCK_RET_ALWAYS_VOID|FUNC_MOCK
 PAREN=(
 extract_funcs = $(shell \
-    grep -Po '($(WRAPPER_FUNCS))\$(PAREN)\K[^,]*' $(1) | \
-    awk '{print "-Wl,--wrap="$$0}')
+    awk -F '[$(PAREN),]' \
+    '/(FUNC_MOCK_RET_ALWAYS|FUNC_MOCK_RET_ALWAYS_VOID|FUNC_MOCK)\$(PAREN)[^,]/ \
+    { \
+        print "-Wl,--wrap=" $$2 \
+    }' $(1) )
 
 INCS += -I../unittest -I$(TOP)/src/include -I$(TOP)/src/common
 
