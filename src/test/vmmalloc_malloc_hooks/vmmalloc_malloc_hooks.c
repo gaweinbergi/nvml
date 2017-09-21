@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016, Intel Corporation
+ * Copyright 2014-2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,8 +36,12 @@
  * usage: vmmalloc_malloc_hooks
  */
 
+#include <stdlib.h>
+#ifndef __FreeBSD__
 #include <malloc.h>
+#endif
 #include "unittest.h"
+#include "vmmalloc_weakfuncs.h"
 
 #ifdef __MALLOC_HOOK_VOLATILE
 #define MALLOC_HOOK_VOLATILE __MALLOC_HOOK_VOLATILE
