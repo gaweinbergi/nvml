@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016, Intel Corporation
+ * Copyright 2014-2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,10 +31,10 @@
  */
 
 /*
- * aligned_alloc.c -- dummy implementation of aligned_alloc()
+ * vmmalloc_weakfuncs.c -- dummy functions for vmmalloc tests
  */
 
-#include "aligned_alloc.h"
+#include "vmmalloc_weakfuncs.h"
 
 __attribute__((weak))
 void *
@@ -42,3 +42,22 @@ aligned_alloc(size_t alignment, size_t size)
 {
 	return NULL;
 }
+
+__attribute__((weak))
+void *
+memalign(size_t alignment, size_t size)
+{
+	return NULL;
+}
+
+__attribute__((weak))
+void *
+pvalloc(size_t size)
+{
+	return NULL;
+}
+
+void (*__free_hook)(void *, const void *);
+void *(*__malloc_hook)(size_t size, const void *);
+void *(*__memalign_hook)(size_t alignment, size_t size, const void *);
+void *(*__realloc_hook)(void *, size_t size, const void *);

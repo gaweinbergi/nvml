@@ -72,10 +72,15 @@ extern "C" {
 
 /* madvise() */
 #ifdef __FreeBSD__
-#define MADVISE minherit
+#define os_madvise minherit
 #define MADV_DONTFORK INHERIT_NONE
 #else
-#define MADVISE madvise
+#define os_madvise madvise
+#endif
+
+/* dlopen() */
+#ifdef __FreeBSD__
+#define RTLD_DEEPBIND 0	/* XXX */
 #endif
 
 #endif /* #ifndef _WIN32 */

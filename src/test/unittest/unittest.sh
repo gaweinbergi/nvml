@@ -853,6 +853,15 @@ function require_no_superuser() {
 }
 
 #
+# require_no_freebsd -- Skip test on FreeBSD
+#
+function require_no_freebsd() {
+	[ "$(uname -s)" != "FreeBSD" ] && return
+	echo "$UNITTEST_NAME: SKIP: Not supported on FreeBSD"
+	exit 0
+}
+
+#
 # require_test_type -- only allow script to continue for a certain test type
 #
 function require_test_type() {
