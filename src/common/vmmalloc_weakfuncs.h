@@ -30,18 +30,33 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * vmmalloc_weakfuncs.h -- definitions for vmmalloc tests
+ */
+
 #ifndef VMMALLOC_WEAKFUNCS_H
 #define VMMALLOC_WEAKFUNCS_H
 
 #include <stddef.h>
+#ifndef __FreeBSD__
+#include <malloc.h>
+#endif
 
 void *aligned_alloc(size_t alignment, size_t size);
 void *memalign(size_t boundary, size_t size);
 void *pvalloc(size_t size);
 
-void (*__free_hook)(void *, const void *);
-void *(*__malloc_hook)(size_t size, const void *);
-void *(*__memalign_hook)(size_t alignment, size_t size, const void *);
-void *(*__realloc_hook)(void *ptr, size_t size, const void *);
+#ifdef __MALLOC_HOOK_VOLATILE
+#define MALLOC_HOOK_VOLATILE __MALLOC_HOOK_VOLATILE
+#else
+#define MALLOC_HOOK_VOLATILE /* */
+#endif
+
+void (*MALLOC_HOOK_VOLATILE __free_hook)(void *, const void *);
+void *(*MALLOC_HOOK_VOLATILE __malloc_hook)(size_t size, const void *);
+void *(*MALLOC_HOOK_VOLATILE __memalign_hook)(size_t alignment, size_t size,
+	const void *);
+void *(*MALLOC_HOOK_VOLATILE __realloc_hook)(void *ptr, size_t size,
+	const void *);
 
 #endif

@@ -37,17 +37,8 @@
  */
 
 #include <stdlib.h>
-#ifndef __FreeBSD__
-#include <malloc.h>
-#endif
 #include "unittest.h"
 #include "vmmalloc_weakfuncs.h"
-
-#ifdef __MALLOC_HOOK_VOLATILE
-#define MALLOC_HOOK_VOLATILE __MALLOC_HOOK_VOLATILE
-#else
-#define MALLOC_HOOK_VOLATILE /* */
-#endif
 
 static void *(*old_malloc_hook) (size_t, const void *);
 static void *(*old_realloc_hook) (void *, size_t, const void *);
