@@ -56,8 +56,3 @@ pvalloc(size_t size)
 {
 	return NULL;
 }
-
-void (*__free_hook)(void *, const void *);
-void *(*__malloc_hook)(size_t size, const void *);
-void *(*__memalign_hook)(size_t alignment, size_t size, const void *);
-void *(*__realloc_hook)(void *, size_t size, const void *);
