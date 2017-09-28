@@ -1,6 +1,5 @@
-#!/usr/bin/env bash
 #
-# Copyright 2014-2017, Intel Corporation
+# Copyright 2017, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -32,30 +31,22 @@
 #
 
 #
-# src/test/util_map_proc/TEST1 -- unit test for util_map /proc parsing
+# src/test/vmmalloc_memalign/Makefile.inc -- common Makefile rules
+#	for vmmalloc tests sharing libwf.so
 #
-export UNITTEST_NAME=util_map_proc/TEST1
-export UNITTEST_NUM=1
 
-# standard unit test setup
-. ../unittest/unittest.sh
+EXTRA_DEPS = ../vmmalloc_memalign/libwf.so
 
-require_test_type medium
+include ../Makefile.inc
 
-require_fs_type none
-configure_valgrind memcheck force-disable
+INCS += -I../vmmalloc_memalign
 
-setup
+../vmmalloc_memalign/libwf.so: ../vmmalloc_memalign/vmmalloc_weakfuncs.c
+	$(CC) $(CFLAGS) -fPIC -shared -Wl,-soname,libwf.so -o $@ $^
 
-# there should be no hint address for any range length
-mapfile="maps_none_"$(uname -s | tr "[:upper:]" "[:lower:]")
-expect_normal_exit ./util_map_proc$EXESUFFIX $mapfile\
-     0x0000100000\
-     0x0001000000\
-     0x0040000000\
-     0x0400000000\
-     0x4000000000
+clobber: libwf_cleanup
 
-check
+libwf_cleanup:
+	$(RM) ../vmmalloc_memalign/libwf.so
 
-pass
+LIBS += ../vmmalloc_memalign/libwf.so -Wl,-rpath=../vmmalloc_memalign

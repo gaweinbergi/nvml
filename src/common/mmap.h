@@ -59,6 +59,9 @@ void *util_map_tmpfile(const char *dir, size_t size, size_t req_align);
 
 #ifdef __FreeBSD__
 #define MAP_NORESERVE 0
+#define OS_MAPFILE "/proc/curproc/map"
+#else
+#define OS_MAPFILE "/proc/self/maps"
 #endif
 
 /*
@@ -88,9 +91,8 @@ int util_range_ro(void *addr, size_t len);
 int util_range_rw(void *addr, size_t len);
 int util_range_none(void *addr, size_t len);
 
-char *util_map_hint_unused(void *minaddr, size_t len, size_t align,
-	const char *altfile);
-char *util_map_hint(size_t len, size_t req_align, const char *altfile);
+char *util_map_hint_unused(void *minaddr, size_t len, size_t align);
+char *util_map_hint(size_t len, size_t req_align);
 
 #define MEGABYTE ((uintptr_t)1 << 20)
 #define GIGABYTE ((uintptr_t)1 << 30)
