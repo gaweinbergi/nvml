@@ -384,14 +384,15 @@ heap_run_init(struct palloc_heap *heap, struct bucket *b,
 	run_data_hdr.type = CHUNK_TYPE_RUN_DATA;
 	run_data_hdr.flags = 0;
 
+	VALGRIND_ADD_TO_TX(&z->chunk_headers[m->chunk_id],
+		sizeof(struct chunk_header) * m->size_idx);
+
 	struct chunk_header *data_hdr;
 	for (unsigned i = 1; i < m->size_idx; ++i) {
 		data_hdr = &z->chunk_headers[m->chunk_id + i];
 		VALGRIND_DO_MAKE_MEM_UNDEFINED(data_hdr, sizeof(*data_hdr));
-		VALGRIND_ADD_TO_TX(data_hdr, sizeof(*data_hdr));
 		run_data_hdr.size_idx = i;
 		*data_hdr = run_data_hdr;
-		VALGRIND_REMOVE_FROM_TX(data_hdr, sizeof(*data_hdr));
 	}
 	pmemops_persist(&heap->p_ops,
 		&z->chunk_headers[m->chunk_id + 1],
@@ -400,15 +401,15 @@ heap_run_init(struct palloc_heap *heap, struct bucket *b,
 	struct chunk_header *hdr = &z->chunk_headers[m->chunk_id];
 	ASSERT(hdr->type == CHUNK_TYPE_FREE);
 
-	VALGRIND_ADD_TO_TX(hdr, sizeof(*hdr));
 	struct chunk_header run_hdr;
 	run_hdr.size_idx = hdr->size_idx;
 	run_hdr.type = CHUNK_TYPE_RUN;
 	run_hdr.flags = header_type_to_flag[c->header_type];
 	*hdr = run_hdr;
-	VALGRIND_REMOVE_FROM_TX(hdr, sizeof(*hdr));
-
 	pmemops_persist(&heap->p_ops, hdr, sizeof(*hdr));
+
+	VALGRIND_REMOVE_FROM_TX(&z->chunk_headers[m->chunk_id],
+		sizeof(struct chunk_header) * m->size_idx);
 }
 
 /*
@@ -853,6 +854,7 @@ heap_resize_chunk(struct palloc_heap *heap, struct bucket *bucket,
 	uint32_t chunk_id, uint32_t zone_id, uint32_t new_size_idx)
 {
 	uint32_t new_chunk_id = chunk_id + new_size_idx;
+	ASSERTne(new_chunk_id, chunk_id);
 
 	struct zone *z = ZID_TO_ZONE(heap->layout, zone_id);
 	struct chunk_header *old_hdr = &z->chunk_headers[chunk_id];

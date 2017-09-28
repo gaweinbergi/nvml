@@ -1,6 +1,5 @@
-#!/usr/bin/env bash
 #
-# Copyright 2015-2017, Intel Corporation
+# Copyright 2017, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -32,37 +31,22 @@
 #
 
 #
-# src/test/obj_convert/TEST13 -- unit test for pool conversion
+# src/test/vmmalloc_memalign/Makefile.inc -- common Makefile rules
+#	for vmmalloc tests sharing libwf.so
 #
-export UNITTEST_NAME=obj_convert/TEST13
-export UNITTEST_NUM=13
 
-# standard unit test setup
-. ../unittest/unittest.sh
+EXTRA_DEPS = ../vmmalloc_memalign/libwf.so
 
-require_command gdb
-require_test_type long
+include ../Makefile.inc
 
-# must be non-static debug release of the binary because the test relies on the
-# gdb ability to interrupt the program at a static method inside the tx module
-# of the libpmemobj library
-require_build_type debug
+INCS += -I../vmmalloc_memalign
 
-require_fs_type pmem
+../vmmalloc_memalign/libwf.so: ../vmmalloc_memalign/vmmalloc_weakfuncs.c
+	$(CC) $(CFLAGS) -fPIC -shared -Wl,-soname,libwf.so -o $@ $^
 
-# Triggers a bug in valgrind 3.10, we should update our valgrind tooling
-# to a newer version and remove this.
-configure_valgrind memcheck force-disable
+clobber: libwf_cleanup
 
-setup
+libwf_cleanup:
+	$(RM) ../vmmalloc_memalign/libwf.so
 
-. common.sh
-
-# set this to enable runtime creation of pools based on the old version of
-# the library. If not set the pools to convert and verify are extracted from
-# a prebuilt archive.
-#PATH_TO_1_0_DBG=/path/to/nvml_1.0/debug
-
-run_scenarios 3
-
-pass
+LIBS += ../vmmalloc_memalign/libwf.so -Wl,-rpath=../vmmalloc_memalign

@@ -267,6 +267,8 @@ For example, when using a custom version of libc++(version 3.9) installed to /us
 ```
 
 ><sup>8</sup> PM-aware Valgrind is not yet available for FreeBSD.
+>
+><sup>9</sup> The address sanitizer is not supported for libvmmalloc on FreeBSD and will be ignored.
 
 #### Building NVML on Windows ####
 

@@ -138,6 +138,7 @@ palloc_operation(struct palloc_heap *heap,
 	struct operation_context *ctx)
 {
 	struct memory_block existing_block = MEMORY_BLOCK_NONE;
+	struct memory_block coalesced_block = MEMORY_BLOCK_NONE;
 	struct memory_block new_block = MEMORY_BLOCK_NONE;
 
 	struct bucket *existing_bucket = NULL;
@@ -148,15 +149,39 @@ palloc_operation(struct palloc_heap *heap,
 	 * These two lock are responsible for protecting the metadata for the
 	 * persistent representation of a chunk. Depending on the operation and
 	 * the type of a chunk, they might be NULL.
+	 * These lock must be held for the duration between the creation of the
+	 * allocation metadata updates in the operation context and the
+	 * operation processing. This is because a different thread might
+	 * operate on the same 8-byte value of the run bitmap and override
+	 * allocation performed by this thread.
 	 */
-	os_mutex_t *existing_block_lock = NULL;
-	os_mutex_t *new_block_lock = NULL;
+	int nlocks = 0;
+	os_mutex_t *locks[] = {NULL, NULL}; /* alloc, free, or both */
 
 	/*
 	 * The offset value which is to be written to the destination pointer
 	 * provided by the caller.
 	 */
 	uint64_t offset_value = 0;
+
+	/* size of the existing block */
+	size_t user_size = 0;
+
+	/*
+	 * The offset of an existing block can be nonzero which means this
+	 * operation is either free or a realloc - either way the offset of the
+	 * object needs to be translated into structure that all of the heap
+	 * methods operate in.
+	 */
+	if (off != 0) {
+		existing_block = memblock_from_offset(heap, off);
+		user_size = existing_block.m_ops
+			->get_user_size(&existing_block);
+
+		/* reallocation to exactly the same size, which is a no-op */
+		if (user_size == size)
+			goto out;
+	}
 
 	/*
 	 * The first step in the allocation of a new block is reserving it in
@@ -251,49 +276,12 @@ palloc_operation(struct palloc_heap *heap,
 			goto out;
 		}
 
-		/*
-		 * This lock must be held for the duration between the creation
-		 * of the allocation metadata updates in the operation context
-		 * and the operation processing. This is because a different
-		 * thread might operate on the same 8-byte value of the run
-		 * bitmap and override allocation performed by this thread.
-		 */
-		new_block_lock = new_block.m_ops->get_lock(&new_block);
-		if (new_block_lock != NULL)
-			util_mutex_lock(new_block_lock);
-
-#ifdef DEBUG
-		if (new_block.m_ops->get_state(&new_block) != MEMBLOCK_FREE) {
-			ERR("Double free or heap corruption");
-			ASSERT(0);
-		}
-#endif /* DEBUG */
-
-		/*
-		 * The actual required metadata modifications are chunk-type
-		 * dependent, but it always is a modification of a single 8 byte
-		 * value - either modification of few bits in a bitmap or
-		 * changing a chunk type from free to used.
-		 */
-		new_block.m_ops->prep_hdr(&new_block, MEMBLOCK_ALLOCATED, ctx);
+		locks[nlocks] = new_block.m_ops->get_lock(&new_block);
+		if (locks[nlocks] != NULL)
+			nlocks += 1;
 	}
 
-	/*
-	 * The offset of an existing block can be nonzero which means this
-	 * operation is either free or a realloc - either way the offset of the
-	 * object needs to be translated into structure that all of the heap
-	 * methods operate in.
-	 */
-	if (off != 0) {
-		existing_block = memblock_from_offset(heap, off);
-
-		size_t user_size = existing_block.m_ops
-			->get_user_size(&existing_block);
-
-		/* reallocation to exactly the same size, which is a no-op */
-		if (user_size == size)
-			goto out;
-
+	if (!MEMORY_BLOCK_IS_NONE(existing_block)) {
 		/* not in-place realloc */
 		if (!MEMORY_BLOCK_IS_NONE(new_block)) {
 			size_t old_size = user_size;
@@ -310,7 +298,15 @@ palloc_operation(struct palloc_heap *heap,
 				to_cpy);
 		}
 
-		struct memory_block coalesced_block = existing_block;
+		VALGRIND_DO_MEMPOOL_FREE(heap->layout,
+			(char *)existing_block.m_ops
+				->get_user_data(&existing_block));
+
+		/*
+		 * Need to update the volatile state of huge blocks, the runs
+		 * will be coalesced as needed during allocation.
+		 */
+		coalesced_block = existing_block;
 		if (existing_block.type == MEMORY_BLOCK_HUGE) {
 			if (new_bucket && new_bucket->aclass->id ==
 						DEFAULT_ALLOC_CLASS_ID) {
@@ -326,40 +322,51 @@ palloc_operation(struct palloc_heap *heap,
 				existing_bucket, &existing_block);
 		}
 
-		/*
-		 * This lock must be held until the operation is processed
-		 * successfully, because other threads might operate on the
-		 * same bitmap value.
-		 */
-		existing_block_lock = existing_block.m_ops
-			->get_lock(&existing_block);
+		locks[nlocks] = existing_block.m_ops->get_lock(&existing_block);
+		if (locks[nlocks] != NULL)
+			nlocks += 1;
+	}
 
-		/* the locks might be identical in the case of realloc */
-		if (existing_block_lock == new_block_lock)
-			existing_block_lock = NULL;
+	if (nlocks > 1) {
+		ASSERTeq(nlocks, 2);
+		/* uniq sort by address in descending order */
+		if (locks[0] == locks[1]) {
+			nlocks -= 1;
+			locks[1] = NULL;
+		} else if (locks[1] > locks[0]) {
+			os_mutex_t *t = locks[0];
+			locks[0] = locks[1];
+			locks[1] = t;
+		}
+	}
 
-		if (existing_block_lock != NULL)
-			util_mutex_lock(existing_block_lock);
+	for (int i = 0; i < nlocks; ++i)
+		util_mutex_lock(locks[i]);
 
+	/*
+	 * The actual required metadata modifications are chunk-type
+	 * dependent, but it always is a modification of a single 8 byte
+	 * value - either modification of few bits in a bitmap or
+	 * changing a chunk type from free to used or vice versa.
+	 */
+	if (!MEMORY_BLOCK_IS_NONE(new_block)) {
 #ifdef DEBUG
-		if (existing_block.m_ops->get_state(&existing_block) !=
-				MEMBLOCK_ALLOCATED) {
-			ERR("Double free or heap corruption");
-			ASSERT(0);
+		if (new_block.m_ops->get_state(&new_block) != MEMBLOCK_FREE) {
+			FATAL("Double free or heap corruption");
 		}
 #endif /* DEBUG */
 
-		VALGRIND_DO_MEMPOOL_FREE(heap->layout,
-			(char *)existing_block.m_ops
-				->get_user_data(&existing_block));
+		new_block.m_ops->prep_hdr(&new_block, MEMBLOCK_ALLOCATED, ctx);
+	}
 
-		/*
-		 * This method will insert new entries into the operation
-		 * context which will, after processing, update the chunk
-		 * metadata to 'free'.
-		 */
-		existing_block = coalesced_block;
-		existing_block.m_ops->prep_hdr(&existing_block,
+	if (!MEMORY_BLOCK_IS_NONE(existing_block)) {
+#ifdef DEBUG
+		if (existing_block.m_ops
+			->get_state(&existing_block) != MEMBLOCK_ALLOCATED) {
+			FATAL("Double free or heap corruption");
+		}
+#endif /* DEBUG */
+		coalesced_block.m_ops->prep_hdr(&coalesced_block,
 			MEMBLOCK_FREE, ctx);
 	}
 
@@ -379,18 +386,15 @@ palloc_operation(struct palloc_heap *heap,
 	 * but in some cases it might not be in-sync with the its transient
 	 * representation.
 	 */
-	if (existing_block.type == MEMORY_BLOCK_HUGE) {
+	if (coalesced_block.type == MEMORY_BLOCK_HUGE) {
 		ASSERTne(existing_bucket, NULL);
-		bucket_insert_block(existing_bucket, &existing_block);
+		bucket_insert_block(existing_bucket, &coalesced_block);
 	}
 
+	for (int i = 0; i < nlocks; ++i)
+		util_mutex_unlock(locks[i]);
+
 out:
-	if (existing_block_lock != NULL)
-		util_mutex_unlock(existing_block_lock);
-
-	if (new_block_lock != NULL)
-		util_mutex_unlock(new_block_lock);
-
 	if (existing_bucket != NULL)
 		heap_bucket_release(heap, existing_bucket);
 
