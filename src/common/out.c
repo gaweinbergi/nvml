@@ -183,7 +183,7 @@ getexecname(void)
 	if ((cc = (sysctl(mib, 4, namepath, &pathlen, NULL, 0) < 0) ?
 		-1 : (ssize_t)pathlen) < 0)
 #else
-	if ((cc = readlink("/proc/self/exe", namepath, PATH_MAX) < 0)
+	if ((cc = readlink("/proc/self/exe", namepath, PATH_MAX)) < 0)
 #endif
 #else
 	if ((cc = GetModuleFileNameA(NULL, namepath, PATH_MAX)) == 0)
