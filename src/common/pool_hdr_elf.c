@@ -31,13 +31,10 @@
  */
 
 /*
- * pool_hdr_linux.c -- pool header utilities for Linux-like OSes
+ * pool_hdr_elf.c -- pool header utilities for OSes that use ELF
  */
 
-#include <fcntl.h>
-#include <link.h>
-#include <string.h>
-#include <unistd.h>
+#include <dlfcn.h>
 
 #include "out.h"
 #include "os.h"
@@ -49,49 +46,35 @@
 int
 util_get_arch_flags(struct arch_flags *arch_flags)
 {
-	int fd;
-	ElfW(Ehdr) elf;
-	char *path;
-	int ret = -1;
+	Dl_info dlinfo;
+	ElfW(Ehdr) *elf;
 
 	memset(arch_flags, 0, sizeof(*arch_flags));
 
-	if ((path = malloc(PATH_MAX)) == NULL) {
-		ERR("!malloc");
-		goto out;
+	if (!dladdr(util_get_arch_flags, &dlinfo)) {
+		ERR("dladdr failed");
+		return -1;
 	}
 
-	util_getexecname(path, PATH_MAX);
-
-	if ((fd = os_open(path, O_RDONLY)) < 0) {
-		ERR("!open %s", path);
-		goto out_free;
+	if (dlinfo.dli_fbase == NULL) {
+		ERR("dlinfo.dli_fbase not set");
+		return -1;
 	}
 
-	if (read(fd, &elf, sizeof(elf)) != sizeof(elf)) {
-		ERR("!read %s", path);
-		goto out_close;
-	}
+	elf = (ElfW(Ehdr) *)dlinfo.dli_fbase;
 
-	if (elf.e_ident[EI_MAG0] != ELFMAG0 ||
-	    elf.e_ident[EI_MAG1] != ELFMAG1 ||
-	    elf.e_ident[EI_MAG2] != ELFMAG2 ||
-	    elf.e_ident[EI_MAG3] != ELFMAG3) {
+	if (elf->e_ident[EI_MAG0] != ELFMAG0 ||
+	    elf->e_ident[EI_MAG1] != ELFMAG1 ||
+	    elf->e_ident[EI_MAG2] != ELFMAG2 ||
+	    elf->e_ident[EI_MAG3] != ELFMAG3) {
 		ERR("invalid ELF magic");
-		goto out_close;
+		return -1;
 	}
 
-	ret = 0;
-
-	arch_flags->e_machine = elf.e_machine;
-	arch_flags->ei_class = elf.e_ident[EI_CLASS];
-	arch_flags->ei_data = elf.e_ident[EI_DATA];
+	arch_flags->e_machine = elf->e_machine;
+	arch_flags->ei_class = elf->e_ident[EI_CLASS];
+	arch_flags->ei_data = elf->e_ident[EI_DATA];
 	arch_flags->alignment_desc = alignment_desc();
 
-out_close:
-	os_close(fd);
-out_free:
-	free(path);
-out:
-	return ret;
+	return 0;
 }

@@ -42,47 +42,12 @@
 #include "pmemcommon.h"
 
 #define FATAL_USAGE()\
-UT_FATAL("usage: arch_flags <file>:<err>:<alignemnt_desc>:<reserved> <file>")
+UT_FATAL("usage: arch_flags <file>:<alignment_desc>:<reserved>")
 #define ARCH_FLAGS_LOG_PREFIX "arch_flags"
 #define ARCH_FLAGS_LOG_LEVEL_VAR "ARCH_FLAGS_LOG_LEVEL"
 #define ARCH_FLAGS_LOG_FILE_VAR "ARCH_FLAGS_LOG_FILE"
 #define ARCH_FLAGS_LOG_MAJOR 0
 #define ARCH_FLAGS_LOG_MINOR 0
-
-/*
- * Open_ret -- fake return value in open syscall
- */
-static int Open_ret;
-
-/*
- * Open_path -- fake path in open syscall
- */
-static char *Open_path;
-
-/*
- * Execname -- pathname of executable
- */
-static char Execname[PATH_MAX];
-
-/*
- * open -- open syscall mock
- */
-FUNC_MOCK(open, int, const char *pathname, int flags, mode_t mode)
-	FUNC_MOCK_RUN_DEFAULT {
-		if (strcmp(pathname, Execname) == 0) {
-			if (Open_ret) {
-				errno = Open_ret;
-				return -1;
-			}
-
-			if (Open_path != NULL) {
-				return __real_open(Open_path, flags, mode);
-			}
-		}
-
-		return __real_open(pathname, flags, mode);
-	}
-FUNC_MOCK_END
 
 /*
  * split_opts_path -- split options string and path to file
@@ -109,27 +74,45 @@ read_arch_flags(char *arg, struct arch_flags *arch_flags)
 {
 	char *path;
 	char *opts;
+	ElfW(Ehdr) elf;
+	int fd;
 	int ret;
 
 	if ((ret = split_path_opts(arg, &path, &opts)))
 		return ret;
 
-	int error;
+	memset(&elf, 0, sizeof(elf));
+
 	uint64_t alignment_desc;
 	uint64_t reserved;
 
-	if ((ret = sscanf(opts, "%d:0x%jx:0x%jx", &error,
-			&alignment_desc, &reserved)) != 3)
+	if ((ret = sscanf(opts, "0x%jx:0x%jx", &alignment_desc,
+			&reserved)) != 2)
 		return -1;
 
-	Open_path = path;
-	Open_ret = error;
-
-	ret = util_get_arch_flags(arch_flags);
-	UT_OUT("get  : %d", ret);
-
-	if (ret)
+	if ((fd = open(path, O_RDONLY)) < 0) {
+		UT_ERR("!open %s", path);
 		return 1;
+	}
+	ret = read(fd, &elf, sizeof(elf));
+	close(fd);
+	if (ret == -1) {
+		UT_ERR("!read %s", path);
+		return 1;
+	}
+
+	if (elf.e_ident[EI_MAG0] != ELFMAG0 ||
+	    elf.e_ident[EI_MAG1] != ELFMAG1 ||
+	    elf.e_ident[EI_MAG2] != ELFMAG2 ||
+	    elf.e_ident[EI_MAG3] != ELFMAG3) {
+		UT_OUT("invalid ELF magic");
+		return 1;
+	}
+
+	arch_flags->e_machine = elf.e_machine;
+	arch_flags->ei_class = elf.e_ident[EI_CLASS];
+	arch_flags->ei_data = elf.e_ident[EI_DATA];
+	arch_flags->alignment_desc = alignment_desc();
 
 	if (alignment_desc)
 		arch_flags->alignment_desc = alignment_desc;
@@ -155,22 +138,16 @@ main(int argc, char *argv[])
 	if (argc < 3)
 		FATAL_USAGE();
 
-	util_getexecname(Execname, PATH_MAX);
-
-	int i;
-	for (i = 1; i < argc - 1; i += 2) {
-		char *arg1 = argv[i];
-		char *arg2 = argv[i + 1];
+	for (int i = 1; i < argc; i++) {
+		char *opts = argv[i];
 		int ret;
 		struct arch_flags arch_flags;
 
-		if ((ret = read_arch_flags(arg1, &arch_flags)) < 0)
+		if ((ret = read_arch_flags(opts, &arch_flags)) < 0)
 			FATAL_USAGE();
 		else if (ret == 0) {
-			Open_path = arg2;
-			Open_ret = 0;
-			ret = util_check_arch_flags(&arch_flags);
-			UT_OUT("check: %d", ret);
+			UT_OUT("check: %d",
+				util_check_arch_flags(&arch_flags));
 		}
 	}
 

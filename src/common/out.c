@@ -161,6 +161,41 @@ Last_errormsg_get(void)
 
 #endif /* NO_LIBPTHREAD */
 
+#ifdef DEBUG
+/*
+ * getexecname -- return name of current executable
+ *
+ * This function is only used when logging is enabled, to make
+ * it more clear in the log which program was running.
+ */
+static const char *
+getexecname(void)
+{
+	static char namepath[PATH_MAX];
+	ssize_t cc;
+
+#ifndef _WIN32
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/sysctl.h>
+	int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
+	size_t pathlen = PATH_MAX;
+	if ((cc = (sysctl(mib, 4, namepath, &pathlen, NULL, 0) < 0) ?
+		-1 : (ssize_t)pathlen) < 0)
+#else
+	if ((cc = readlink("/proc/self/exe", namepath, PATH_MAX) < 0)
+#endif
+#else
+	if ((cc = GetModuleFileNameA(NULL, namepath, PATH_MAX)) == 0)
+#endif
+		strcpy(namepath, "unknown");
+	else
+		namepath[cc] = '\0';
+
+	return namepath;
+}
+#endif	/* DEBUG */
+
 #ifndef _WIN32
 /*
  * out_prefork -- lock output file prior to fork. This prevents any
@@ -273,15 +308,12 @@ out_init(const char *log_prefix, const char *log_level_var,
 #ifndef _WIN32
 	if (os_thread_atfork(out_prefork, out_postfork_parent,
 		out_postfork_child)) {
-		ERR("!os_thread_atfork");
-		abort();
+		FATAL("!os_thread_atfork");
 	}
 #endif
 
 #ifdef DEBUG
-	static char namepath[PATH_MAX];
-	LOG(1, "pid %d: program: %s", getpid(),
-		util_getexecname(namepath, PATH_MAX));
+	LOG(1, "pid %d: program: %s", getpid(), getexecname());
 #endif
 	LOG(1, "%s version %d.%d", log_prefix, major_version, minor_version);
 

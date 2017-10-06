@@ -42,7 +42,7 @@ SOURCE =\
 	$(COMMON)/os_thread_linux.c\
 	$(COMMON)/out.c\
 	$(COMMON)/pool_hdr.c\
-	$(COMMON)/pool_hdr_linux.c\
+	$(COMMON)/pool_hdr_elf.c\
 	$(COMMON)/set.c\
 	$(COMMON)/util.c\
 	$(COMMON)/uuid.c\

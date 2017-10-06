@@ -38,4 +38,3 @@ OBJS = arch_flags.o
 
 LIBPMEMCOMMON=y
 include ../Makefile.inc
-LDFLAGS += -Wl,--wrap=open
