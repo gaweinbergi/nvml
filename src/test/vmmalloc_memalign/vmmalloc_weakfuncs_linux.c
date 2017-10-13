@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017, Intel Corporation
+ * Copyright 2014-2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,22 +31,15 @@
  */
 
 /*
- * vmmalloc_weakfuncs.h -- definitions for vmmalloc tests
+ * vmmalloc_weakfuncs_linux.c -- dummy functions for vmmalloc tests
  */
 
-#ifndef VMMALLOC_WEAKFUNCS_H
-#define VMMALLOC_WEAKFUNCS_H
+#include <malloc.h>
+#include "vmmalloc_weakfuncs.h"
 
-void *aligned_alloc(size_t alignment, size_t size);
-void *memalign(size_t boundary, size_t size);
-void *pvalloc(size_t size);
-
-#ifdef __FreeBSD__
-/* XXX These exist only to allow the tests to compile - they are never used */
-void (*__free_hook)(void *, const void *);
-void *(*__malloc_hook)(size_t size, const void *);
-void *(*__memalign_hook)(size_t alignment, size_t size, const void *);
-void *(*__realloc_hook)(void *ptr, size_t size, const void *);
-#endif
-
-#endif
+__attribute__((weak))
+void *
+aligned_alloc(size_t alignment, size_t size)
+{
+	return NULL;
+}

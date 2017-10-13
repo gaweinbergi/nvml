@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017, Intel Corporation
+ * Copyright 2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,9 +31,10 @@
  */
 
 /*
- * vmmalloc_weakfuncs.c -- dummy functions for vmmalloc tests
+ * vmmalloc_weakfuncs_freebsd.c -- dummy functions for vmmalloc tests
  */
 
+#include <stddef.h>
 #include "vmmalloc_weakfuncs.h"
 
 __attribute__((weak))
