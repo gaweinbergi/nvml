@@ -41,8 +41,7 @@ include ../Makefile.inc
 
 INCS += -I../vmmalloc_memalign
 
-wffile = vmmalloc_weakfuncs_$(shell uname -s | tr "[:upper:]" "[:lower:]").c
-../vmmalloc_memalign/libwf.so: ../vmmalloc_memalign/$(wffile)
+../vmmalloc_memalign/libwf.so: ../vmmalloc_memalign/vmmalloc_weakfuncs.c
 	$(CC) $(CFLAGS) -fPIC -shared -Wl,-soname,libwf.so -o $@ $^
 
 clobber: libwf_cleanup

@@ -37,11 +37,17 @@
 #ifndef VMMALLOC_WEAKFUNCS_H
 #define VMMALLOC_WEAKFUNCS_H
 
+#include <stddef.h>
+#ifndef __FreeBSD__
+#include <malloc.h>
+#endif
+
 void *aligned_alloc(size_t alignment, size_t size);
+
+#ifdef __FreeBSD__
 void *memalign(size_t boundary, size_t size);
 void *pvalloc(size_t size);
 
-#ifdef __FreeBSD__
 /* XXX These exist only to allow the tests to compile - they are never used */
 void (*__free_hook)(void *, const void *);
 void *(*__malloc_hook)(size_t size, const void *);

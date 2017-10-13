@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Intel Corporation
+ * Copyright 2014-2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,10 +31,9 @@
  */
 
 /*
- * vmmalloc_weakfuncs_freebsd.c -- dummy functions for vmmalloc tests
+ * vmmalloc_weakfuncs.c -- dummy functions for vmmalloc tests
  */
 
-#include <stddef.h>
 #include "vmmalloc_weakfuncs.h"
 
 __attribute__((weak))
@@ -44,6 +43,7 @@ aligned_alloc(size_t alignment, size_t size)
 	return NULL;
 }
 
+#ifdef __FreeBSD__
 __attribute__((weak))
 void *
 memalign(size_t alignment, size_t size)
@@ -57,3 +57,4 @@ pvalloc(size_t size)
 {
 	return NULL;
 }
+#endif
