@@ -71,7 +71,7 @@ struct map_tracker {
 	HANDLE FileHandle;
 	HANDLE FileMappingHandle;
 	DWORD Access;
-	off_t Offset;
+	os_off_t Offset;
 	size_t FileLen;
 #endif
 };
@@ -105,6 +105,8 @@ util_mmap_init(void)
 
 		if (errno || endp == e) {
 			LOG(2, "Invalid PMEM_MMAP_HINT");
+		} else if (os_access(OS_MAPFILE, R_OK)) {
+			LOG(2, "No /proc, PMEM_MMAP_HINT ignored");
 		} else {
 			Mmap_hint = (void *)val;
 			Mmap_no_random = 1;
@@ -140,7 +142,7 @@ util_map(int fd, size_t len, int flags, int rdonly, size_t req_align)
 			rdonly, req_align);
 
 	void *base;
-	void *addr = util_map_hint(len, req_align, NULL);
+	void *addr = util_map_hint(len, req_align);
 	if (addr == MAP_FAILED) {
 		ERR("cannot find a contiguous region of given size");
 		return NULL;
@@ -188,8 +190,8 @@ util_map_tmpfile(const char *dir, size_t size, size_t req_align)
 {
 	int oerrno;
 
-	if (((off_t)size) < 0) {
-		ERR("invalid size (%zu) for off_t", size);
+	if (((os_off_t)size) < 0) {
+		ERR("invalid size (%zu) for os_off_t", size);
 		errno = EFBIG;
 		return NULL;
 	}
@@ -200,7 +202,7 @@ util_map_tmpfile(const char *dir, size_t size, size_t req_align)
 		goto err;
 	}
 
-	if ((errno = os_posix_fallocate(fd, 0, (off_t)size)) != 0) {
+	if ((errno = os_posix_fallocate(fd, 0, (os_off_t)size)) != 0) {
 		ERR("!posix_fallocate");
 		goto err;
 	}

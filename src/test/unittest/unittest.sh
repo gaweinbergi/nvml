@@ -671,6 +671,16 @@ function expect_normal_exit() {
 		export ASAN_OPTIONS="detect_leaks=0 ${ASAN_OPTIONS}"
 	fi
 
+	# in case of preloading libvmmalloc.so force valgrind to not override malloc
+	if [ -n "$VALGRINDEXE" -a -n "$TEST_LD_PRELOAD" ]; then
+		if [ $(valgrind_version) -ge 312 ]; then
+			preload=`basename $TEST_LD_PRELOAD`
+		fi
+		if [ "$preload" == "libvmmalloc.so" ]; then
+			export VALGRIND_OPTS="$VALGRIND_OPTS --soname-synonyms=somalloc=nouserintercepts"
+		fi
+	fi
+
 	local REMOTE_VALGRIND_LOG=0
 	if [ "$CHECK_TYPE" != "none" ]; then
 	        case "$1"
@@ -693,9 +703,11 @@ function expect_normal_exit() {
 	fi
 
 	disable_exit_on_error
+
 	eval $ECHO LD_LIBRARY_PATH=$TEST_LD_LIBRARY_PATH LD_PRELOAD=$TEST_LD_PRELOAD \
 		$trace $*
 	ret=$?
+
 	if [ $REMOTE_VALGRIND_LOG -eq 1 ]; then
 		for node in $CHECK_NODES
 		do
@@ -784,9 +796,19 @@ function expect_abnormal_exit() {
 		esac
 	fi
 
+	# in case of preloading libvmmalloc.so force valgrind to not override malloc
+	if [ -n "$VALGRINDEXE" -a -n "$TEST_LD_PRELOAD" ]; then
+		if [ $(valgrind_version) -ge 312 ]; then
+			preload=`basename $TEST_LD_PRELOAD`
+		fi
+		if [ "$preload" == "libvmmalloc.so" ]; then
+			export VALGRIND_OPTS="$VALGRIND_OPTS --soname-synonyms=somalloc=nouserintercepts"
+		fi
+	fi
+
 	disable_exit_on_error
-	eval $ECHO ASAN_OPTIONS="detect_leaks=0 ${ASAN_OPTIONS}" LD_LIBRARY_PATH=$TEST_LD_LIBRARY_PATH LD_PRELOAD=$TEST_LD_PRELOAD \
-	$TRACE $*
+	eval $ECHO ASAN_OPTIONS="detect_leaks=0 ${ASAN_OPTIONS}" \
+		LD_LIBRARY_PATH=$TEST_LD_LIBRARY_PATH LD_PRELOAD=$TEST_LD_PRELOAD $TRACE $*
 	ret=$?
 	restore_exit_on_error
 
@@ -849,6 +871,24 @@ function require_no_superuser() {
 	local user_id=$(id -u)
 	[ "$user_id" != "0" ] && return
 	echo "$UNITTEST_NAME: SKIP required: run without superuser rights"
+	exit 0
+}
+
+#
+# require_no_freebsd -- Skip test on FreeBSD
+#
+function require_no_freebsd() {
+	[ "$(uname -s)" != "FreeBSD" ] && return
+	echo "$UNITTEST_NAME: SKIP: Not supported on FreeBSD"
+	exit 0
+}
+
+#
+# require_procfs -- Skip test if /proc is not mounted
+#
+function require_procfs() {
+	mount | grep -q "/proc" && return
+	echo "$UNITTEST_NAME: SKIP: /proc not mounted"
 	exit 0
 }
 
@@ -2292,9 +2332,10 @@ function get_node_dir() {
 #
 # example:
 #    The following command initialize rpmem environment variables on the node 1
-#    to perform replication to the node 0.
+#    to perform replication to the node 0 and node 2. Additionaly rpmemd pid
+#    will be stored in file.pid.
 #
-#       init_rpmem_on_node 1 0
+#       init_rpmem_on_node 1 0 2:file.pid
 #
 function init_rpmem_on_node() {
 	local master=$1
@@ -2315,6 +2356,10 @@ function init_rpmem_on_node() {
 	local SEPARATOR="|"
 	for slave in "$@"
 	do
+		slave=(${slave//:/ })
+		pid=${slave[1]}
+		slave=${slave[0]}
+
 		validate_node_number $slave
 		local poolset_dir=${NODE_TEST_DIR[$slave]}
 		if [ -n "$RPMEM_POOLSET_DIR" ]; then
@@ -2324,6 +2369,9 @@ function init_rpmem_on_node() {
 		if [ -n "$(is_valgrind_enabled_on_node $slave)" ]; then
 			log_file=${CHECK_TYPE}${UNITTEST_NUM}.log
 			trace=$(get_trace $CHECK_TYPE $log_file $slave)
+		fi
+		if [ -n "$pid" ]; then
+			trace="$trace ../ctrld $pid exe"
 		fi
 		CMD="cd ${NODE_TEST_DIR[$slave]} && "
 

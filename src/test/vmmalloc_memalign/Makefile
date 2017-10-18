@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2016, Intel Corporation
+# Copyright 2014-2017, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -35,18 +35,7 @@
 #
 TARGET = vmmalloc_memalign
 OBJS = vmmalloc_memalign.o
-EXTRA_DEPS = libaa.so
 
 vmmalloc_memalign.o: CFLAGS += -D_ISOC11_SOURCE
 
-include ../Makefile.inc
-
-libaa.so: aligned_alloc.c
-	$(CC) $(CFLAGS) -fPIC -shared -Wl,-soname,libaa.so -o $@ $^
-
-clobber: libaa_cleanup
-
-libaa_cleanup:
-	$(RM) libaa.so
-
-LIBS += -lc -L. -Wl,-rpath=. -laa
+include Makefile.inc

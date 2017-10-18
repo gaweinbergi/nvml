@@ -82,7 +82,9 @@ CFLAGS_FILTER += -Wdisabled-macro-expansion
 CFLAGS_FILTER += -Wlanguage-extension-token
 JEMALLOC_CFLAGS=$(filter-out $(CFLAGS_FILTER), $(CFLAGS))
 ifeq ($(shell uname -s),FreeBSD)
-JEMALLOC_CFLAGS += -I/usr/local/vg-pmem/include -I/usr/local/include
+# XXX REMOVE BEFORE INTEGRATING
+JEMALLOC_CFLAGS += -I/usr/local/vg-pmem/include
+JEMALLOC_CFLAGS += -I/usr/local/include
 endif
 JEMALLOC_REMOVE_LDFLAGS_TMP = -Wl,--warn-common
 JEMALLOC_LDFLAGS=$(filter-out $(JEMALLOC_REMOVE_LDFLAGS_TMP), $(LDFLAGS))

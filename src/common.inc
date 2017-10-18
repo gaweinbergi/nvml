@@ -46,8 +46,13 @@ OS_BANNED = $(TOP)/utils/os-banned
 COVERAGE = 0
 
 PKG_CONFIG ?= pkg-config
-CLANG_FORMAT ?= clang-format
 HEADERS = $(wildcard *.h) $(wildcard *.hpp)
+
+ifeq ($(shell command -v clang-format-3.8 > /dev/null && echo y || echo n), y)
+CLANG_FORMAT ?= clang-format-3.8
+else
+CLANG_FORMAT ?= clang-format
+endif
 
 GCOV_CFLAGS=-fprofile-arcs -ftest-coverage --coverage
 GCOV_LDFLAGS=-fprofile-arcs -ftest-coverage
@@ -60,7 +65,7 @@ endif
 check_package = $(shell $(PKG_CONFIG) $(1) && echo y || echo n)
 
 check_flag = $(shell echo "int main(){return 0;}" |\
-	$(CC) $(CFLAGS) $(1) -x c -o /dev/null - 2>/dev/null && echo y || echo n)
+	$(CC) $(CFLAGS) -Werror $(1) -x c -o /dev/null - 2>/dev/null && echo y || echo n)
 
 check_compiler = $(shell $(CC) --version | grep $(1) && echo y || echo n)
 
@@ -227,8 +232,11 @@ sparse-c = $(shell for c in *.c; do sparse -Wsparse-all -Wno-declaration-after-s
 ifeq ($(shell uname -s),FreeBSD)
 GLIBC_CXXFLAGS=-D_GLIBCXX_USE_C99
 UNIX98_CFLAGS=
+# XXX RESTORE BEFORE INTEGRATING XXX
 OS_INCS=-I$(TOP)/src/freebsd/include -I/usr/local/vg-pmem/include -I/usr/local/include
 OS_LIBS=-L/usr/local/vg-pmem/lib -L/usr/local/lib
+#OS_INCS=-I$(TOP)/src/freebsd/include -I/usr/local/include
+#OS_LIBS=-L/usr/local/lib
 LIBDL=
 LIBUTIL=-lutil
 LIBUUID=-luuid

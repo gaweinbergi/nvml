@@ -1,6 +1,4 @@
-#!/usr/bin/env bash
-#
-# Copyright 2015-2017, Intel Corporation
+# Copyright 2017, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -30,36 +28,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-
+# src/pmemcommon.inc -- common SOURCE definitions for NVM pmem libraries
 #
-# src/test/vmmalloc_init/TEST19 -- unit test for vmmalloc_init
-#
-export UNITTEST_NAME=vmmalloc_init/TEST19
-export UNITTEST_NUM=19
 
-# standard unit test setup
-. ../unittest/unittest.sh
+osdep = $(1)_$(shell uname -s | tr "[:upper:]" "[:lower:]")$(2)
 
-require_test_type medium
-
-require_fs_type any
-# there's no point in testing statically linked builds
-require_build_type nondebug
-require_no_asan
-
-setup
-
-export VMMALLOC_FORK=2
-export TEST_LD_PRELOAD=libvmmalloc.so
-
-if [ "$(uname -s)" == "FreeBSD" ]; then
-expect_abnormal_exit ./vmmalloc_init$EXESUFFIX 2> stderr$UNITTEST_NUM.log
-$GREP 'Error (libvmmalloc)' stderr$UNITTEST_NUM.log > grep$UNITTEST_NUM.log
-rm -f ./vmmalloc_init$EXESUFFIX.core
-else
-expect_normal_exit ./vmmalloc_init$EXESUFFIX > grep$UNITTEST_NUM.log
-fi
-
-check
-
-pass
+SOURCE =\
+	$(COMMON)/file.c\
+	$(COMMON)/file_linux.c\
+	$(COMMON)/mmap.c\
+	$(COMMON)/mmap_linux.c\
+	$(COMMON)/os_linux.c\
+	$(COMMON)/os_thread_linux.c\
+	$(COMMON)/out.c\
+	$(COMMON)/pool_hdr.c\
+	$(COMMON)/set.c\
+	$(COMMON)/util.c\
+	$(COMMON)/uuid.c\
+	$(COMMON)/$(call osdep, uuid,.c)\
+	$(COMMON)/util_linux.c

@@ -79,12 +79,7 @@ pmemobj_pool_by_ptr(const void *arg)
 static void
 mock_open_pool(PMEMobjpool *pop)
 {
-#ifdef _WIN32
-	__sync_fetch_and_add64(&pop->run_id, 2);
-#else
-	__sync_fetch_and_add(&pop->run_id, 2);
-#endif
-
+	util_fetch_and_add64(&pop->run_id, 2);
 }
 
 /*
@@ -402,8 +397,8 @@ main(int argc, char *argv[])
 				(void *)(uintptr_t)i);
 		}
 		for (unsigned i = 0; i < num_threads; i++) {
-			PTHREAD_JOIN(write_threads[i], NULL);
-			PTHREAD_JOIN(check_threads[i], NULL);
+			PTHREAD_JOIN(&write_threads[i], NULL);
+			PTHREAD_JOIN(&check_threads[i], NULL);
 		}
 
 		if (test_type == 't') {

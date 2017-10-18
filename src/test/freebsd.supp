@@ -94,6 +94,9 @@ helgrind_FreeBSD_funlockfile
 helgrind_FreeBSD__rtld_allocate_tls
    Helgrind:Race
    ...
+   obj:/lib/libthr.so.3
+   ...
+   obj:/libexec/ld-elf.so.1
    fun:_rtld_allocate_tls
    ...
    fun:pthread_create

@@ -47,6 +47,7 @@
 #include "common.h"
 #include "output.h"
 #include "info.h"
+#include "util.h"
 
 #define BITMAP_BUFF_SIZE 1024
 
@@ -162,8 +163,8 @@ get_bitmap_reserved(struct chunk_run *run, uint32_t *reserved)
 
 	uint32_t ret = 0;
 	for (uint64_t i = 0; i < nvals - 1; i++)
-		ret += util_count_ones(run->bitmap[i]);
-	ret += util_count_ones(run->bitmap[nvals - 1] & ~last_val);
+		ret += util_popcount64(run->bitmap[i]);
+	ret += util_popcount64(run->bitmap[nvals - 1] & ~last_val);
 
 	*reserved = ret;
 
@@ -675,8 +676,9 @@ info_obj_chunk(struct pmem_info *pip, uint64_t c, uint64_t z,
 				sizeof(run->block_size) + sizeof(run->bitmap),
 				PTR_TO_OFF(pop, run), 1);
 
-		struct alloc_class *aclass = alloc_class_by_unit_size(
-			pip->obj.alloc_classes, run->block_size);
+		struct alloc_class *aclass = alloc_class_by_run(
+			pip->obj.alloc_classes,
+			run->block_size, m.header_type, m.size_idx);
 		if (aclass) {
 			outv_field(v, "Block size", "%s",
 					out_get_size_str(run->block_size,

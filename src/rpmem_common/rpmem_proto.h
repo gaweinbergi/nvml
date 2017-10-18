@@ -245,9 +245,9 @@ struct rpmem_msg_set_attr_resp {
 } PACKED;
 
 /*
- * XXX Begin: Suppress conversion warnings for FreeBSD be*toh macros
+ * XXX Begin: Suppress gcc conversion warnings for FreeBSD be*toh macros.
  */
-#pragma GCC diagnostic push	/* XXX only needed for clang */
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 /*
  * rpmem_ntoh_msg_ibc_attr -- convert rpmem_msg_ibc attr to host byte order
@@ -382,7 +382,7 @@ rpmem_ntoh_msg_open(struct rpmem_msg_open *msg)
 	rpmem_ntoh_msg_pool_desc(&msg->pool_desc);
 }
 /*
- * XXX End: Suppress conversion warnings for FreeBSD be*toh macros
+ * XXX End: Suppress gcc conversion warnings for FreeBSD be*toh macros
  */
 #pragma GCC diagnostic pop
 /*

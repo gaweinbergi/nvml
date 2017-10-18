@@ -97,42 +97,31 @@ int Prefault_at_create = 0;
 /*
  * util_remote_init -- initialize remote replication
  */
-int
+void
 util_remote_init(void)
 {
 	LOG(3, NULL);
-	if (Remote_replication_available)
-		return -1;
 
-	util_mutex_init(&Remote_lock);
-	Remote_replication_available = 1;
-
-	return 0;
+	/* XXX Is duplicate initialization really okay? */
+	if (!Remote_replication_available) {
+		util_mutex_init(&Remote_lock);
+		Remote_replication_available = 1;
+	}
 }
 
 /*
  * util_remote_fini -- finalize remote replication
  */
-int
+void
 util_remote_fini(void)
 {
 	LOG(3, NULL);
-	if (!Remote_replication_available)
-		return -1;
 
-	Remote_replication_available = 0;
-	util_mutex_destroy(&Remote_lock);
-
-	return 0;
-}
-
-/*
- * util_remote_available -- return remote replication state
- */
-int
-util_remote_available(void)
-{
-	return Remote_replication_available;
+	/* XXX Okay to be here if not initialized? */
+	if (Remote_replication_available) {
+		Remote_replication_available = 0;
+		util_mutex_destroy(&Remote_lock);
+	}
 }
 
 /*
@@ -368,7 +357,7 @@ util_map_hdr(struct pool_set_part *part, int flags, int rdonly)
 #ifdef USE_VG_MEMCHECK
 	if (On_valgrind) {
 		/* this is required only for Device DAX & memcheck */
-		addr = util_map_hint(hdrsize, hdrsize, NULL);
+		addr = util_map_hint(hdrsize, hdrsize);
 		if (addr == MAP_FAILED) {
 			ERR("canot find a contiguous region of given size");
 			/* there's nothing we can do */
@@ -426,7 +415,7 @@ util_map_part(struct pool_set_part *part, void *addr, size_t size,
 	ASSERTeq((uintptr_t)addr % Mmap_align, 0);
 	ASSERTeq(offset % Mmap_align, 0);
 	ASSERTeq(size % Mmap_align, 0);
-	ASSERT(((off_t)offset) >= 0);
+	ASSERT(((os_off_t)offset) >= 0);
 	ASSERTeq(offset % part->alignment, 0);
 	ASSERT(offset < part->filesize);
 
@@ -437,7 +426,7 @@ util_map_part(struct pool_set_part *part, void *addr, size_t size,
 
 	void *addrp = mmap(addr, size,
 			rdonly ? PROT_READ : PROT_READ|PROT_WRITE,
-			flags, part->fd, (off_t)offset);
+			flags, part->fd, (os_off_t)offset);
 	if (addrp == MAP_FAILED) {
 		ERR("!mmap: %s", part->path);
 		return -1;
@@ -1524,7 +1513,7 @@ util_poolset_remote_replica_open(struct pool_set *set, unsigned repidx,
 	 * The librpmem client requires fork() support to work correctly.
 	 */
 	if (set->replica[0]->part[0].is_dev_dax) {
-		int ret = MADVISE(set->replica[0]->part[0].addr,
+		int ret = os_madvise(set->replica[0]->part[0].addr,
 				set->replica[0]->part[0].filesize,
 				MADV_DONTFORK);
 		if (ret) {
@@ -1754,13 +1743,8 @@ util_header_create(struct pool_set *set, unsigned repidx, unsigned partidx,
 		hdrp->crtime = (uint64_t)stbuf.st_ctime;
 	}
 
-	if (!arch_flags) {
-		if (util_get_arch_flags(&hdrp->arch_flags)) {
-			ERR("Reading architecture flags failed");
-			errno = EINVAL;
-			return -1;
-		}
-	}
+	if (!arch_flags)
+		util_get_arch_flags(&hdrp->arch_flags);
 
 	util_convert2le_hdr(hdrp);
 
@@ -2012,7 +1996,7 @@ util_replica_map_local(struct pool_set *set, unsigned repidx, int flags)
 		mapsize = rep->part[0].filesize & ~(Mmap_align - 1);
 
 		/* determine a hint address for mmap() */
-		addr = util_map_hint(rep->repsize, 0, NULL);
+		addr = util_map_hint(rep->repsize, 0);
 		if (addr == MAP_FAILED) {
 			ERR("cannot find a contiguous region of given size");
 			return -1;
@@ -2503,7 +2487,7 @@ util_replica_open_local(struct pool_set *set, unsigned repidx, int flags)
 		retry_for_contiguous_addr = 0;
 
 		/* determine a hint address for mmap() */
-		addr = util_map_hint(rep->repsize, 0, NULL);
+		addr = util_map_hint(rep->repsize, 0);
 		if (addr == MAP_FAILED) {
 			ERR("cannot find a contiguous region of given size");
 			return -1;

@@ -120,6 +120,7 @@ extern "C" {
 /* XXX: move OS abstraction layer out of common */
 #include "os.h"
 #include "os_thread.h"
+#include "util.h"
 
 int ut_get_uuid_str(char *);
 #define UT_MAX_ERR_MSG 128
@@ -408,11 +409,11 @@ int ut_fcntl(const char *file, int line, const char *func, int fd,
     int cmd, int num, ...);
 #endif
 
-off_t ut_lseek(const char *file, int line, const char *func, int fd,
-    off_t offset, int whence);
+os_off_t ut_lseek(const char *file, int line, const char *func, int fd,
+    os_off_t offset, int whence);
 
 int ut_posix_fallocate(const char *file, int line, const char *func, int fd,
-    off_t offset, off_t len);
+    os_off_t offset, os_off_t len);
 
 int ut_stat(const char *file, int line, const char *func, const char *path,
     os_stat_t *st_bufp);
@@ -426,7 +427,7 @@ int ut_fstat(const char *file, int line, const char *func, int fd,
 int ut_flock(const char *file, int line, const char *func, int fd, int op);
 
 void *ut_mmap(const char *file, int line, const char *func, void *addr,
-    size_t length, int prot, int flags, int fd, off_t offset);
+    size_t length, int prot, int flags, int fd, os_off_t offset);
 
 int ut_munmap(const char *file, int line, const char *func, void *addr,
     size_t length);
@@ -466,11 +467,11 @@ int ut_mknod(const char *file, int line, const char *func,
     const char *pathname, mode_t mode, dev_t dev);
 
 int ut_truncate(const char *file, int line, const char *func,
-    const char *path, off_t length);
+    const char *path, os_off_t length);
 #endif
 
 int ut_ftruncate(const char *file, int line, const char *func,
-    int fd, off_t length);
+    int fd, os_off_t length);
 
 int ut_chmod(const char *file, int line, const char *func,
     const char *path, mode_t mode);
@@ -648,7 +649,7 @@ int ut_thread_create(const char *file, int line, const char *func,
     const os_thread_attr_t *__restrict attr,
     void *(*start_routine)(void *), void *__restrict arg);
 int ut_thread_join(const char *file, int line, const char *func,
-    os_thread_t thread, void **value_ptr);
+    os_thread_t *thread, void **value_ptr);
 
 /* a os_thread_create() that can't return an error */
 #define PTHREAD_CREATE(thread, attr, start_routine, arg)\
@@ -712,7 +713,7 @@ intptr_t ut_spawnv(int argc, const char **argv, ...);
 	static unsigned RCOUNTER(name);\
 	ret_type __wrap_##name(__VA_ARGS__);\
 	ret_type __wrap_##name(__VA_ARGS__) {\
-		switch (__sync_fetch_and_add(&RCOUNTER(name), 1)) {
+		switch (util_fetch_and_add32(&RCOUNTER(name), 1)) {
 
 #define FUNC_MOCK_END\
 	}}

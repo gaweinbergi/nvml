@@ -226,7 +226,7 @@ main(int argc, char *argv[])
 
 	/* wait for all the threads to complete */
 	for (int i = 0; i < NTHREAD; i++)
-		PTHREAD_JOIN(threads[i], NULL);
+		PTHREAD_JOIN(&threads[i], NULL);
 
 	/* verify that all the threads return the same value */
 	for (int i = 1; i < NTHREAD; i++)
@@ -236,3 +236,10 @@ main(int argc, char *argv[])
 
 	DONE(NULL);
 }
+
+
+/*
+ * Since libpmem is linked statically, we need to invoke its ctor/dtor.
+ */
+MSVC_CONSTR(libpmem_init)
+MSVC_DESTR(libpmem_fini)

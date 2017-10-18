@@ -114,10 +114,10 @@ consumer(void *arg)
 
 	for (int i = 0; i < thp->nmsg; ++i) {
 		m = ringbuf_dequeue_s(thp->rbuf, sizeof(struct th_msg));
-		long long nmsg_consumed = util_fetch_and_add(
+		long long nmsg_consumed = util_fetch_and_add32(
 			&thp->msg_per_producer_sum[m->th_id], 1);
 
-		util_fetch_and_add(&m->consumed, 1);
+		util_fetch_and_add32(&m->consumed, 1);
 
 		/* check if the ringbuf is FIFO for a single consumer */
 		if (thp->nconsumers == 1) {
@@ -125,7 +125,7 @@ consumer(void *arg)
 			last_msg_id[m->th_id] = m->msg_id;
 		}
 
-		util_fetch_and_add(thp->consumers_msg_sum, m->msg_id);
+		util_fetch_and_add64(thp->consumers_msg_sum, m->msg_id);
 
 		/*
 		 * For multiple consumers, it's guaranteed that each dequeue
@@ -199,10 +199,10 @@ many_consumers_many_producers(int nconsumers, int nproducers, int msg_total)
 	}
 
 	for (int i = 0; i < nproducers; ++i)
-		PTHREAD_JOIN(producers[i], NULL);
+		PTHREAD_JOIN(&producers[i], NULL);
 
 	for (int i = 0; i < nconsumers; ++i)
-		PTHREAD_JOIN(consumers[i], NULL);
+		PTHREAD_JOIN(&consumers[i], NULL);
 
 	long long expected_sum = 0;
 	for (int i = 0; i < nproducers; ++i) {

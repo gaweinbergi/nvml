@@ -91,16 +91,18 @@ required packages on the build system:
 
 * **autoconf**
 * **bash**
+* **binutils**
 * **coreutils**
 * **e2fsprogs-libuuid**
 * **gmake**
+* **libunwind**
 * **ncurses**<sup>4</sup>
 * **pkgconf**
 
 Some tests and example applications require additional packages, but they
 do not interrupt building if they are missing. An appropriate message is
 displayed instead. For details please read the **DEPENDENCIES** section
-in appropriate README file.
+in the appropriate README file.
 
 
 See our [Dockerfiles](https://github.com/pmem/nvml/blob/master/utils/docker/images/)
@@ -235,10 +237,10 @@ The libraries support standard Valgrind drd, helgrind and memcheck, as well as
 a PM-aware version of [Valgrind](https://github.com/pmem/valgrind)<sup>8</sup>.
 To test the libraries with Valgrind, supply the compiler with the **USE_VG_\<TOOL\>** flag, for example:
 ```
-	$ make EXTRA_CFLAGS=-DUSE_VG_PMEMCHECK
+	$ make EXTRA_CFLAGS=-DUSE_VG_MEMCHECK
 ```
 
-The **USE_VALGRIND** flag enables all Valgrind tools (drd, helgrind, memcheck and pmemcheck).
+The **USE_VALGRIND** flag enables all Valgrind tools (drd, helgrind, memcheck and pmemcheck).<sup>8</sup>
 
 The **SANITIZE** flag allows the libraries to be tested with various
 sanitizers. For example, to test the libraries with AddressSanitizer
@@ -264,7 +266,9 @@ For example, when using a custom version of libc++(version 3.9) installed to /us
 	$ CC=clang CXX=clang++ make USE_LLVM_LIBCPP=1 LIBCPP_INCDIR=/usr/local/libcxx/include/c++/v1 LIBCPP_LIBDIR=/usr/local/libcxx/lib check
 ```
 
-><sup>8</sup> PM-aware Valgrind is not yet available for FreeBSD.
+><sup>8</sup> PM-aware Valgrind is not yet available for FreeBSD. Until it is, **USE_VALGRIND** is not supported and the individual **USE_VG_\<TOOL\>** options must be used instead.
+>
+><sup>9</sup> The address sanitizer is not supported for libvmmalloc on FreeBSD and will be ignored.
 
 #### Building NVML on Windows ####
 

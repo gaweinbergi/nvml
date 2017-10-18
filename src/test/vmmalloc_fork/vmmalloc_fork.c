@@ -169,7 +169,7 @@ main(int argc, char *argv[])
 		if (pids1[i]) {
 			/* parent */
 			for (int t = 0; t < nthread; ++t) {
-				PTHREAD_JOIN(thread[t], NULL);
+				PTHREAD_JOIN(&thread[t], NULL);
 				free(thread_sizes[t]);
 			}
 

@@ -263,7 +263,7 @@ rpmem_common_fini(RPMEMpool *rpp, int join)
 	rpmem_obc_disconnect(rpp->obc);
 
 	if (join) {
-		int ret = os_thread_join(rpp->monitor, NULL);
+		int ret = os_thread_join(&rpp->monitor, NULL);
 		if (ret) {
 			errno = ret;
 			ERR("joining monitor thread failed");
@@ -585,7 +585,7 @@ rpmem_close(RPMEMpool *rpp)
 
 	RPMEM_LOG(INFO, "closing out-of-band connection");
 
-	__sync_fetch_and_or(&rpp->closing, 1);
+	util_fetch_and_or32(&rpp->closing, 1);
 
 	rpmem_fip_close(rpp->fip);
 
@@ -653,6 +653,8 @@ rpmem_read(RPMEMpool *rpp, void *buff, size_t offset,
 
 	int ret = rpmem_fip_read(rpp->fip, buff, length, offset, lane);
 	if (unlikely(ret)) {
+		errno = ret;
+		ERR("!read operation failed");
 		rpp->error = ret;
 		return -1;
 	}
@@ -738,12 +740,8 @@ rpmem_remove(const char *target, const char *pool_set, int flags)
 
 	ret = rpmem_ssh_close(ssh);
 	if (ret) {
-		if (ret > 0) {
-			errno = ret;
-			ERR("!remote command failed");
-		} else {
-			ERR("remote command failed");
-		}
+		errno = EINVAL;
+		ERR("remote command failed");
 		goto err_ssh_close;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016, Intel Corporation
+ * Copyright 2015-2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,11 +30,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ALIGNED_ALLOC_H
-#define ALIGNED_ALLOC_H
+/*
+ * vmmalloc_weakfuncs.h -- definitions for vmmalloc tests
+ */
+
+#ifndef VMMALLOC_WEAKFUNCS_H
+#define VMMALLOC_WEAKFUNCS_H
 
 #include <stddef.h>
+#ifndef __FreeBSD__
+#include <malloc.h>
+#endif
 
 void *aligned_alloc(size_t alignment, size_t size);
+
+#ifdef __FreeBSD__
+void *memalign(size_t boundary, size_t size);
+void *pvalloc(size_t size);
+
+/* XXX These exist only to allow the tests to compile - they are never used */
+void (*__free_hook)(void *, const void *);
+void *(*__malloc_hook)(size_t size, const void *);
+void *(*__memalign_hook)(size_t alignment, size_t size, const void *);
+void *(*__realloc_hook)(void *ptr, size_t size, const void *);
+#endif
 
 #endif

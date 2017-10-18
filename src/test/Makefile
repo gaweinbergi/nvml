@@ -80,6 +80,7 @@ OBJ_TESTS = \
 	obj_direct\
 	obj_first_next\
 	obj_fragmentation\
+	obj_fragmentation2\
 	obj_heap\
 	obj_heap_interrupt\
 	obj_heap_state\
@@ -190,6 +191,7 @@ OTHER_TESTS = \
 	unicode_match_script\
 	util_cpuid\
 	util_uuid_generate\
+	util_vec\
 	util_file_create\
 	util_file_open\
 	util_map_proc\
@@ -268,15 +270,13 @@ VMMALLOC_TESTS = \
 	vmmalloc_fork\
 	vmmalloc_init\
 	vmmalloc_malloc\
+	vmmalloc_malloc_hooks\
 	vmmalloc_malloc_usable_size\
 	vmmalloc_memalign\
 	vmmalloc_out_of_memory\
 	vmmalloc_realloc\
 	vmmalloc_valgrind\
 	vmmalloc_valloc
-ifneq ($(shell uname -s),FreeBSD)
-	VMMALLOC_TESTS += vmmalloc_malloc_hooks	# No malloc hooks in FreeBSD
-endif
 
 EXAMPLES_TESTS = \
 	ex_libpmem\
