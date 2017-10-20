@@ -395,12 +395,11 @@ palloc_operation(struct palloc_heap *heap,
 
 	if (new_bucket != NULL)
 		heap_bucket_release(heap, new_bucket);
-/*
- * XXX Issue #669
- *	if (!MEMORY_BLOCK_IS_NONE(existing_block)) {
- *		heap_memblock_on_free(heap, &existing_block);
- *	}
- */
+
+	if (!MEMORY_BLOCK_IS_NONE(existing_block)) {
+		heap_memblock_on_free(heap, &existing_block);
+	}
+
 	for (int i = 0; i < nlocks; ++i)
 		util_mutex_unlock(locks[i]);
 

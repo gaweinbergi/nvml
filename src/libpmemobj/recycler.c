@@ -152,6 +152,8 @@ recycler_calc_score(struct recycler *r, const struct memory_block *m,
 	 * require grabbing a lock for each run that is being recalculated and
 	 * that would severly hamper both raw throughput of allocations and
 	 * scalability of free.
+	 * Note: the following annotation applies only to drd, so a suppression
+	 * is still required for helgrind.
 	 */
 	VALGRIND_ANNOTATE_IGNORE_READS_BEGIN();
 
