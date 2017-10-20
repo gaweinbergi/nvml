@@ -57,16 +57,6 @@ extern "C" {
 
 #ifndef _WIN32
 
-/* ELF and /proc */
-#ifdef __FreeBSD__
-#include <elf.h>
-#if __ELF_WORD_SIZE == 32
-#define ElfW(type) Elf32_##type
-#else
-#define ElfW(type) Elf64_##type
-#endif
-#endif
-
 /* madvise() */
 #ifdef __FreeBSD__
 #define os_madvise minherit
@@ -103,6 +93,11 @@ typedef struct _stat64 os_stat_t;
 #define os_close close
 #define os_fclose fclose
 
+#ifndef _WIN32
+typedef off_t os_off_t;
+#else
+/* XXX: os_off_t defined in platform.h */
+#endif
 int os_open(const char *pathname, int flags, ...);
 int os_stat(const char *pathname, os_stat_t *buf);
 int os_unlink(const char *pathname);
@@ -111,8 +106,8 @@ FILE *os_fopen(const char *pathname, const char *mode);
 FILE *os_fdopen(int fd, const char *mode);
 int os_chmod(const char *pathname, mode_t mode);
 int os_mkstemp(char *temp);
-int os_posix_fallocate(int fd, off_t offset, off_t len);
-int os_ftruncate(int fd, off_t length);
+int os_posix_fallocate(int fd, os_off_t offset, os_off_t len);
+int os_ftruncate(int fd, os_off_t length);
 int os_flock(int fd, int operation);
 ssize_t os_writev(int fd, const struct iovec *iov, int iovcnt);
 int os_clock_gettime(int id, struct timespec *ts);

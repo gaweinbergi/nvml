@@ -47,6 +47,7 @@
 #include "common.h"
 #include "output.h"
 #include "info.h"
+#include "util.h"
 
 #define BITMAP_BUFF_SIZE 1024
 
@@ -162,8 +163,8 @@ get_bitmap_reserved(struct chunk_run *run, uint32_t *reserved)
 
 	uint32_t ret = 0;
 	for (uint64_t i = 0; i < nvals - 1; i++)
-		ret += util_count_ones(run->bitmap[i]);
-	ret += util_count_ones(run->bitmap[nvals - 1] & ~last_val);
+		ret += util_popcount64(run->bitmap[i]);
+	ret += util_popcount64(run->bitmap[nvals - 1] & ~last_val);
 
 	*reserved = ret;
 
@@ -915,13 +916,12 @@ info_obj_stats_alloc_classes(struct pmem_info *pip, int v,
 				pip->obj.alloc_classes, (uint8_t)class);
 		if (c == NULL)
 			continue;
+		if (!stats->class_stats[class].n_units)
+			continue;
 
 		double used_perc = 100.0 *
 			(double)stats->class_stats[class].n_used /
 			(double)stats->class_stats[class].n_units;
-
-		if (!stats->class_stats[class].n_units)
-			continue;
 
 		outv_nl(v);
 		outv_field(v, "Unit size", "%s", out_get_size_str(

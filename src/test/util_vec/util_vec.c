@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017, Intel Corporation
+ * Copyright 2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,67 +31,79 @@
  */
 
 /*
- * pool_hdr_linux.c -- pool header utilities for Linux-like OSes
+ * util_vec.c -- unit test for vec implementation
  */
 
-#include <fcntl.h>
-#include <link.h>
-#include <string.h>
-#include <unistd.h>
+#include "unittest.h"
+#include "vec.h"
 
-#include "out.h"
-#include "os.h"
-#include "pool_hdr.h"
+#define Realloc REALLOC
+#define Free FREE
+#define ASSERTne UT_ASSERTne
 
-/*
- * util_get_arch_flags -- get architecture identification flags
- */
-int
-util_get_arch_flags(struct arch_flags *arch_flags)
+struct test {
+	int foo;
+	int bar;
+};
+
+static void
+vec_test()
 {
-	int fd;
-	ElfW(Ehdr) elf;
-	char *path;
-	int ret = -1;
+	VEC(testvec, struct test) v = VEC_INITIALIZER;
 
-	memset(arch_flags, 0, sizeof(*arch_flags));
+	UT_ASSERTeq(VEC_SIZE(&v), 0);
 
-	if ((path = malloc(PATH_MAX)) == NULL) {
-		ERR("!malloc");
-		goto out;
+	struct test t = {1, 2};
+	struct test t2 = {3, 4};
+
+	VEC_PUSH_BACK(&v, t);
+	VEC_PUSH_BACK(&v, t2);
+
+	UT_ASSERTeq(VEC_ARR(&v)[0].foo, 1);
+	UT_ASSERTeq(VEC_GET(&v, 1)->foo, 3);
+
+	UT_ASSERTeq(VEC_SIZE(&v), 2);
+
+	int n = 0;
+	VEC_FOREACH(t, &v) {
+		switch (n) {
+		case 0:
+			UT_ASSERTeq(t.foo, 1);
+			UT_ASSERTeq(t.bar, 2);
+			break;
+		case 1:
+			UT_ASSERTeq(t.foo, 3);
+			UT_ASSERTeq(t.bar, 4);
+			break;
+		}
+		n++;
 	}
+	UT_ASSERTeq(n, 2);
+	UT_ASSERTeq(VEC_SIZE(&v), n);
 
-	util_getexecname(path, PATH_MAX);
+	VEC_POP_BACK(&v);
 
-	if ((fd = os_open(path, O_RDONLY)) < 0) {
-		ERR("!open %s", path);
-		goto out_free;
+	n = 0;
+	VEC_FOREACH(t, &v) {
+		UT_ASSERTeq(t.foo, 1);
+		UT_ASSERTeq(t.bar, 2);
+		n++;
 	}
+	UT_ASSERTeq(n, 1);
+	UT_ASSERTeq(VEC_SIZE(&v), n);
 
-	if (read(fd, &elf, sizeof(elf)) != sizeof(elf)) {
-		ERR("!read %s", path);
-		goto out_close;
-	}
+	VEC_CLEAR(&v);
+	UT_ASSERTeq(VEC_SIZE(&v), 0);
 
-	if (elf.e_ident[EI_MAG0] != ELFMAG0 ||
-	    elf.e_ident[EI_MAG1] != ELFMAG1 ||
-	    elf.e_ident[EI_MAG2] != ELFMAG2 ||
-	    elf.e_ident[EI_MAG3] != ELFMAG3) {
-		ERR("invalid ELF magic");
-		goto out_close;
-	}
+	VEC_DELETE(&v);
+}
 
-	ret = 0;
+int
+main(int argc, char *argv[])
+{
+	START(argc, argv, "util_vec");
 
-	arch_flags->e_machine = elf.e_machine;
-	arch_flags->ei_class = elf.e_ident[EI_CLASS];
-	arch_flags->ei_data = elf.e_ident[EI_DATA];
-	arch_flags->alignment_desc = alignment_desc();
+	vec_test();
 
-out_close:
-	os_close(fd);
-out_free:
-	free(path);
-out:
-	return ret;
+	DONE(NULL);
 }

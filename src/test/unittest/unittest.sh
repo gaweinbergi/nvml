@@ -2115,8 +2115,15 @@ function pass() {
 
 	if [ "$TM" = "1" ]; then
 		end_time=$($DATE +%s.%N)
-		tm=$($DATE -d "0 $end_time sec - $start_time sec" +%H:%M:%S.%N | \
-			sed -e "s/^00://g" -e "s/^00://g" -e "s/\([0-9]*\)\.\([0-9][0-9][0-9]\).*/\1.\2/")
+
+		start_time_sec=$(date -d "0 $start_time sec" +%s)
+		end_time_sec=$(date -d "0 $end_time sec" +%s)
+
+		days=$(((end_time_sec - start_time_sec) / (24*3600)))
+		days=$(printf "%03d" $days)
+
+		tm=$($DATE -d "0 $end_time sec - $start_time sec" +%H:%M:%S.%N)
+		tm=$(echo "$days:$tm" | sed -e "s/^000://g" -e "s/^00://g" -e "s/^00://g" -e "s/\([0-9]*\)\.\([0-9][0-9][0-9]\).*/\1.\2/")
 		tm="\t\t\t[$tm s]"
 	else
 		tm=""
@@ -2332,9 +2339,10 @@ function get_node_dir() {
 #
 # example:
 #    The following command initialize rpmem environment variables on the node 1
-#    to perform replication to the node 0.
+#    to perform replication to the node 0 and node 2. Additionaly rpmemd pid
+#    will be stored in file.pid.
 #
-#       init_rpmem_on_node 1 0
+#       init_rpmem_on_node 1 0 2:file.pid
 #
 function init_rpmem_on_node() {
 	local master=$1
@@ -2355,6 +2363,10 @@ function init_rpmem_on_node() {
 	local SEPARATOR="|"
 	for slave in "$@"
 	do
+		slave=(${slave//:/ })
+		pid=${slave[1]}
+		slave=${slave[0]}
+
 		validate_node_number $slave
 		local poolset_dir=${NODE_TEST_DIR[$slave]}
 		if [ -n "$RPMEM_POOLSET_DIR" ]; then
@@ -2364,6 +2376,9 @@ function init_rpmem_on_node() {
 		if [ -n "$(is_valgrind_enabled_on_node $slave)" ]; then
 			log_file=${CHECK_TYPE}${UNITTEST_NUM}.log
 			trace=$(get_trace $CHECK_TYPE $log_file $slave)
+		fi
+		if [ -n "$pid" ]; then
+			trace="$trace ../ctrld $pid exe"
 		fi
 		CMD="cd ${NODE_TEST_DIR[$slave]} && "
 

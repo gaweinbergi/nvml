@@ -41,6 +41,7 @@ CP = cp
 CSTYLE = $(TOP)/utils/cstyle
 CSTYLEON = 0
 STYLE_CHECK = $(TOP)/utils/style_check.sh
+CHECK_SHEBANG = $(TOP)/utils/check-shebang.sh
 CHECK_OS = $(TOP)/utils/check-os.sh
 OS_BANNED = $(TOP)/utils/os-banned
 COVERAGE = 0
@@ -65,7 +66,7 @@ endif
 check_package = $(shell $(PKG_CONFIG) $(1) && echo y || echo n)
 
 check_flag = $(shell echo "int main(){return 0;}" |\
-	$(CC) $(CFLAGS) $(1) -x c -o /dev/null - 2>/dev/null && echo y || echo n)
+	$(CC) $(CFLAGS) -Werror $(1) -x c -o /dev/null - 2>/dev/null && echo y || echo n)
 
 check_compiler = $(shell $(CC) --version | grep $(1) && echo y || echo n)
 

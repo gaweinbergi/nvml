@@ -523,7 +523,7 @@ pmem_is_pmem(const void *addr, size_t len)
 	/* This is not thread-safe, but pmem_is_pmem_init() is. */
 	if (once == 0) {
 		pmem_is_pmem_init();
-		util_fetch_and_add(&once, 1);
+		util_fetch_and_add32(&once, 1);
 	}
 
 	VALGRIND_ANNOTATE_HAPPENS_AFTER(&Func_is_pmem);
@@ -595,7 +595,7 @@ pmem_map_fileU(const char *path, size_t len, int flags,
 	}
 
 	if (flags & PMEM_FILE_CREATE) {
-		if ((off_t)len < 0) {
+		if ((os_off_t)len < 0) {
 			ERR("invalid file length %zu", len);
 			errno = EINVAL;
 			return NULL;
@@ -656,13 +656,13 @@ pmem_map_fileU(const char *path, size_t len, int flags,
 
 	if (flags & PMEM_FILE_CREATE) {
 		if (flags & PMEM_FILE_SPARSE) {
-			if (os_ftruncate(fd, (off_t)len) != 0) {
+			if (os_ftruncate(fd, (os_off_t)len) != 0) {
 				ERR("!ftruncate");
 				goto err;
 			}
 		} else {
 			if ((errno = os_posix_fallocate(fd, 0,
-							(off_t)len)) != 0) {
+							(os_off_t)len)) != 0) {
 				ERR("!posix_fallocate");
 				goto err;
 			}

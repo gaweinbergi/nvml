@@ -409,7 +409,7 @@ util_map_part(struct pool_set_part *part, void *addr, size_t size,
 	ASSERTeq((uintptr_t)addr % Mmap_align, 0);
 	ASSERTeq(offset % Mmap_align, 0);
 	ASSERTeq(size % Mmap_align, 0);
-	ASSERT(((off_t)offset) >= 0);
+	ASSERT(((os_off_t)offset) >= 0);
 	ASSERTeq(offset % part->alignment, 0);
 	ASSERT(offset < part->filesize);
 
@@ -420,7 +420,7 @@ util_map_part(struct pool_set_part *part, void *addr, size_t size,
 
 	void *addrp = mmap(addr, size,
 			rdonly ? PROT_READ : PROT_READ|PROT_WRITE,
-			flags, part->fd, (off_t)offset);
+			flags, part->fd, (os_off_t)offset);
 	if (addrp == MAP_FAILED) {
 		ERR("!mmap: %s", part->path);
 		return -1;
@@ -1730,13 +1730,8 @@ util_header_create(struct pool_set *set, unsigned repidx, unsigned partidx,
 		hdrp->crtime = (uint64_t)stbuf.st_ctime;
 	}
 
-	if (!arch_flags) {
-		if (util_get_arch_flags(&hdrp->arch_flags)) {
-			ERR("Reading architecture flags failed");
-			errno = EINVAL;
-			return -1;
-		}
-	}
+	if (!arch_flags)
+		util_get_arch_flags(&hdrp->arch_flags);
 
 	util_convert2le_hdr(hdrp);
 

@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
 #
 # Copyright 2016-2017, Intel Corporation
 #
@@ -45,6 +45,7 @@
 # - cut-off windows and web specific parts of documentation using pp
 #
 
+set -e
 set -o pipefail
 
 filename=$1
