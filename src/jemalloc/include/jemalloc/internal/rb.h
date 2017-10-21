@@ -23,7 +23,7 @@
 #define	RB_H_
 
 /* XXX Avoid super-slow compile with clang */
-#if defined(__clang__) && __has_attribute(__no_sanitize__)
+#if (defined(__clang__) && __has_attribute(__no_sanitize__))
 #define NOSANITIZE __attribute__((no_sanitize("undefined")))
 #else
 #define NOSANITIZE
