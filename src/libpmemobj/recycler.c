@@ -155,8 +155,7 @@ recycler_calc_score(struct palloc_heap *heap, const struct memory_block *m,
 	 * Note: the following annotation applies only to drd, so a suppression
 	 * is still required for helgrind.
 	 */
-	VALGRIND_ANNOTATE_OVERLOOK_READS_BEGIN(
-		&run->bitmap, sizeof(run->bitmap));
+	VALGRIND_ANNOTATE_IGNORE_READS_BEGIN();
 
 	for (int i = 0; i < MAX_BITMAP_VALUES; ++i) {
 		uint64_t value = ~run->bitmap[i];
@@ -194,8 +193,7 @@ recycler_calc_score(struct palloc_heap *heap, const struct memory_block *m,
 			max_block = n;
 	}
 
-	VALGRIND_ANNOTATE_OVERLOOK_READS_END(
-		&run->bitmap, sizeof(run->bitmap));
+	VALGRIND_ANNOTATE_IGNORE_READS_END();
 
 	if (out_free_space != NULL)
 		*out_free_space = free_space;

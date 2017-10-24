@@ -41,6 +41,7 @@ export UNITTEST_NAME=obj_pmalloc_mt/TEST$UNITTEST_NUM
 # standard unit test setup
 . ../unittest/unittest.sh
 
+export VALGRIND_OPTS="--suppressions=excluded-errors.supp"
 require_valgrind_dev_version 3.10
 require_fs_type pmem non-pmem
 require_test_type medium
@@ -48,6 +49,6 @@ configure_valgrind helgrind force-enable
 setup
 
 PMEM_IS_PMEM_FORCE=1 expect_normal_exit\
-	./obj_pmalloc_mt$EXESUFFIX 8 100 10 $DIR/testfile
+	./obj_pmalloc_mt$EXESUFFIX 4 64 4 $DIR/testfile
 
 pass

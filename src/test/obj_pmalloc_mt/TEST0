@@ -41,6 +41,7 @@ export UNITTEST_NUM=0
 # standard unit test setup
 . ../unittest/unittest.sh
 
+export VALGRIND_OPTS="--suppressions=excluded-errors.supp"
 require_valgrind_dev_version 3.10
 require_fs_type pmem non-pmem
 require_test_type long
