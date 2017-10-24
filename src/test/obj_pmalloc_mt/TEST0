@@ -33,6 +33,7 @@
 
 #
 # src/test/obj_pmalloc_mt/TEST0 -- multithreaded allocator test
+#	(long helgrind version)
 #
 export UNITTEST_NAME=obj_pmalloc_mt/TEST0
 export UNITTEST_NUM=0
@@ -40,6 +41,7 @@ export UNITTEST_NUM=0
 # standard unit test setup
 . ../unittest/unittest.sh
 
+export VALGRIND_OPTS="--suppressions=excluded-errors.supp"
 require_valgrind_dev_version 3.10
 require_fs_type pmem non-pmem
 require_test_type long
@@ -47,6 +49,6 @@ configure_valgrind helgrind force-enable
 setup
 
 PMEM_IS_PMEM_FORCE=1 expect_normal_exit\
-	./obj_pmalloc_mt$EXESUFFIX\ $DIR/testfile
+	./obj_pmalloc_mt$EXESUFFIX 32 1000 100 $DIR/testfile
 
 pass

@@ -1,0 +1,20 @@
+{
+Recycler_calc_score_benign_read
+   Helgrind:Race
+   fun:recycler_calc_score
+   ...
+}
+# The below is only benign in respect to the above, but there is no way to
+# tell helgrind this. So we go ahead and suppress the write as well, and
+# let drd, which can handle this scenario, check for other potential races.
+{
+Recycler_calc_score_benign_write
+   Helgrind:Race
+   fun:redo_log_process
+   fun:operation_process_persistent_redo
+   fun:operation_process
+   fun:palloc_operation
+   fun:pmalloc_operation
+   fun:pfree
+   ...
+}
