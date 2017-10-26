@@ -1,61 +1,8 @@
-# Can't have a race in tsd
-{
-helgrind_tcache
-   Helgrind:Race
-   fun:*tcache*
-   ...
-}
-# XXX
-{
-helgrind_xxx
-   Helgrind:Race
-   fun:main
-}
-# XXX
-{
-helgrind_vmem_pool_malloc
-   Helgrind:Race
-   fun:je_vmem_pool_malloc
-   fun:vmem_malloc
-   fun:do_test
-   fun:mythread_wrapper
-   fun:start_thread
-   fun:clone
-}
-# XXX
-{
-helgrind_pool_ifree
-   Helgrind:Race
-   fun:pool_ifree
-   fun:je_vmem_pool_free
-   fun:vmem_free
-   fun:do_test
-   fun:mythread_wrapper
-   fun:start_thread
-   fun:clone
-}
 {
 helgrind_exit
    Helgrind:Race
+   fun:out_fini
    ...
    fun:exit
    ...
-}
-# The following really is a race, but we don't care
-{
-helgrind_out_common_errno
-   Helgrind:Race
-   fun:out_common
-   ...
-   fun:do_test
-   ...
-   fun:clone
-}
-{
-helgrind_prefork_lockorder
-   Helgrind:LockOrder
-   ...
-   fun:je_vmem_je_jemalloc_prefork
-   ...
-   fun:main
 }

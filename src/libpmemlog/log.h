@@ -36,11 +36,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#ifdef __FreeBSD__
-#include <sys/endian.h>
-#else
 #include <endian.h>
-#endif
 
 #include "util.h"
 #include "os_thread.h"

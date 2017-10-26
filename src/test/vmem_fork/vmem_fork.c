@@ -182,7 +182,7 @@ main(int argc, char *argv[])
 
 		for (int t = 0; t < nthread; ++t) {
 			if (pids1[i]) {	/* parent */
-				PTHREAD_JOIN(thread[t], NULL);
+				PTHREAD_JOIN(&thread[t], NULL);
 			}
 			vmem_free(vmp, targs[t]);
 		}

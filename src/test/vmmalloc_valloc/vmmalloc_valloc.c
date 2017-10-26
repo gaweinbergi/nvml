@@ -64,13 +64,8 @@ main(int argc, char *argv[])
 		Valloc = valloc;
 		break;
 	case 'p':
-#ifdef __FreeBSD__
-		UT_OUT("pvalloc not supported on FreeBSD");
-		DONE(NULL);
-#else
 		UT_OUT("testing pvalloc");
 		Valloc = pvalloc;
-#endif
 		break;
 	default:
 		UT_FATAL("usage: %s [v|p]", argv[0]);
@@ -91,13 +86,11 @@ main(int argc, char *argv[])
 		/* check for correct address alignment */
 		UT_ASSERTeq((uintptr_t)(ptr) & (pagesize - 1), 0);
 
-#ifndef __FreeBSD__
 		if (Valloc == pvalloc) {
 			/* check for correct allocation size */
 			size_t usable = malloc_usable_size(ptr);
 			UT_ASSERTeq(usable, roundup(size, pagesize));
 		}
-#endif
 
 		free(ptr);
 	}
