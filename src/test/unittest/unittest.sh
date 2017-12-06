@@ -1047,11 +1047,22 @@ function dax_device_zero() {
 # dax_get_size -- get the size of a device dax
 #
 function dax_get_size() {
-	minor_hex=$(stat -c "%t" $1)
-	major_hex=$(stat -c "%T" $1)
-	minor_dec=$((16#$minor_hex))
+	major_hex=$(stat -c "%t" $1)
+	minor_hex=$(stat -c "%T" $1)
 	major_dec=$((16#$major_hex))
-	cat /sys/dev/char/$minor_dec:$major_dec/size
+	minor_dec=$((16#$minor_hex))
+	cat /sys/dev/char/$major_dec:$minor_dec/size
+}
+
+#
+# dax_get_alignment -- get the alignment of a device dax
+#
+function dax_get_alignment() {
+	major_hex=$(stat -c "%t" $1)
+	minor_hex=$(stat -c "%T" $1)
+	major_dec=$((16#$major_hex))
+	minor_dec=$((16#$minor_hex))
+	cat /sys/dev/char/$major_dec:$minor_dec/device/align
 }
 
 #
@@ -2492,6 +2503,12 @@ function init_rpmem_on_node() {
 	if [ -n ${UNITTEST_DO_NOT_CHECK_OPEN_FILES+x} ]; then
 		export_vars_node $master UNITTEST_DO_NOT_CHECK_OPEN_FILES
 	fi
+	if [ -n ${PMEMOBJ_NLANES+x} ]; then
+		export_vars_node $master PMEMOBJ_NLANES
+	fi
+	if [ -n ${RPMEM_MAX_NLANES+x} ]; then
+		export_vars_node $master RPMEM_MAX_NLANES
+	fi
 
 	require_node_log_files $master rpmem$UNITTEST_NUM.log
 	require_node_log_files $master $PMEMOBJ_LOG_FILE
@@ -2664,3 +2681,16 @@ if [ "$CLEAN_FAILED_REMOTE" == "y" ]; then
 	done
 	exit 0
 fi
+
+# calculate the minimum of two or more numbers
+minimum() {
+	local min=$1
+	shift
+	for val in $*; do
+		if [[ "$val" < "$min" ]]; then
+			min=$val
+		fi
+	done
+	echo $min
+}
+
