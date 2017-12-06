@@ -43,7 +43,6 @@
 static PMEMctopool **Pools;
 static int Npools;
 static const char *Dir;
-static os_mutex_t Pool_lock;
 
 static void *
 thread_func(void *arg)
@@ -60,23 +59,19 @@ thread_func(void *arg)
 
 			/* delete old pool with the same id if exists */
 			if (Pools[pool_id] != NULL) {
+				pmemcto_close(Pools[pool_id]);
 				Pools[pool_id] = NULL;
 				UNLINK(filename);
 			}
 
-			os_mutex_lock(&Pool_lock);
 			Pools[pool_id] = pmemcto_create(filename, "test",
 				PMEMCTO_MIN_POOL, 0600);
-			os_mutex_unlock(&Pool_lock);
 			UT_ASSERTne(Pools[pool_id], NULL);
 
 			void *ptr = pmemcto_malloc(Pools[pool_id], sizeof(int));
 			UT_ASSERTne(ptr, NULL);
 
 			pmemcto_free(Pools[pool_id], ptr);
-			os_mutex_lock(&Pool_lock);
-			pmemcto_close(Pools[pool_id]);
-			os_mutex_unlock(&Pool_lock);
 		}
 	}
 
@@ -104,8 +99,6 @@ main(int argc, char *argv[])
 	int *pool_idx = CALLOC(nthreads, sizeof(int));
 	UT_ASSERTne(pool_idx, NULL);
 
-	os_mutex_init(&Pool_lock);
-
 	/* create and destroy pools multiple times */
 	for (int t = 0; t < nthreads; t++) {
 		pool_idx[t] = Npools * t;
@@ -114,6 +107,13 @@ main(int argc, char *argv[])
 
 	for (int t = 0; t < nthreads; t++)
 		PTHREAD_JOIN(&threads[t], NULL);
+
+	for (int i = 0; i < Npools; ++i) {
+		if (Pools[i] != NULL) {
+			pmemcto_close(Pools[i]);
+			Pools[i] = NULL;
+		}
+	}
 
 	FREE(Pools);
 	FREE(threads);
