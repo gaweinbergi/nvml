@@ -43,6 +43,7 @@
 #include <limits.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include "out.h"
 #include "os.h"
@@ -57,6 +58,7 @@
 
 static const char *Log_prefix;
 static int Log_level;
+static int Log_threadid;
 static FILE *Out_fp;
 static unsigned Log_alignment;
 
@@ -223,6 +225,7 @@ out_init(const char *log_prefix, const char *log_level_var,
 #ifdef DEBUG
 	char *log_level;
 	char *log_file;
+	char *log_threadid;
 
 	if ((log_level = os_getenv(log_level_var)) != NULL) {
 		Log_level = atoi(log_level);
@@ -255,6 +258,13 @@ out_init(const char *log_prefix, const char *log_level_var,
 				log_file, buff);
 			abort();
 		}
+	}
+
+	if (((log_threadid = os_getenv("NVML_LOG_THREADID")) != NULL) &&
+			(log_threadid[0] == 'y' || log_threadid[0] == 'Y' ||
+			log_threadid[0] == 't' || log_threadid[0] == 'T' ||
+			log_threadid[0] == '1')) {
+		Log_threadid = 1;
 	}
 #endif	/* DEBUG */
 
@@ -399,6 +409,48 @@ out_snprintf(char *str, size_t size, const char *format, ...)
 }
 
 /*
+ * out_printfile -- common print to file function for out_common and out_error
+ */
+static unsigned
+out_printfile(char *buf, const char *file, int line, const char *func,
+		int level)
+{
+	unsigned cc = 0;
+
+	if (file) {
+		int ret;
+		char *f = strrchr(file, OS_DIR_SEPARATOR);
+		if (f)
+			file = f + 1;
+
+		if (Log_threadid) {
+			ret = out_snprintf(buf, MAXPRINT, "==%lx==",
+					(uintptr_t)pthread_self());
+			if (ret < 0)
+				goto err;
+			cc = (unsigned)ret;
+		}
+
+		ret = out_snprintf(&buf[cc], MAXPRINT - cc,
+				"<%s>: <%d> [%s:%d %s] ",
+				Log_prefix, level, file, line, func);
+		if (ret < 0)
+			goto err;
+		cc += (unsigned)ret;
+		if (cc < Log_alignment) {
+			memset(buf + cc, ' ', Log_alignment - cc);
+			cc = Log_alignment;
+		}
+	}
+
+	return cc;
+
+err:
+	Print("out_snprintf failed");
+	return MAXPRINT;
+}
+
+/*
  * out_common -- common output code, all output goes through here
  */
 static void
@@ -407,28 +459,13 @@ out_common(const char *file, int line, const char *func, int level,
 {
 	int oerrno = errno;
 	char buf[MAXPRINT];
-	unsigned cc = 0;
+	unsigned cc;
 	int ret;
 	const char *sep = "";
 	char errstr[UTIL_MAX_ERR_MSG] = "";
 
-	if (file) {
-		char *f = strrchr(file, OS_DIR_SEPARATOR);
-		if (f)
-			file = f + 1;
-		ret = out_snprintf(&buf[cc], MAXPRINT - cc,
-				"<%s>: <%d> [%s:%d %s] ",
-				Log_prefix, level, file, line, func);
-		if (ret < 0) {
-			Print("out_snprintf failed");
-			goto end;
-		}
-		cc += (unsigned)ret;
-		if (cc < Log_alignment) {
-			memset(buf + cc, ' ', Log_alignment - cc);
-			cc = Log_alignment;
-		}
-	}
+	if ((cc = out_printfile(buf, file, line, func, level)) == MAXPRINT)
+		goto end;
 
 	if (fmt) {
 		if (*fmt == '!') {
@@ -486,25 +523,9 @@ out_error(const char *file, int line, const char *func,
 #ifdef DEBUG
 	if (Log_level >= 1) {
 		char buf[MAXPRINT];
-		cc = 0;
 
-		if (file) {
-			char *f = strrchr(file, OS_DIR_SEPARATOR);
-			if (f)
-				file = f + 1;
-			ret = out_snprintf(&buf[cc], MAXPRINT,
-					"<%s>: <1> [%s:%d %s] ",
-					Log_prefix, file, line, func);
-			if (ret < 0) {
-				Print("out_snprintf failed");
-				goto end;
-			}
-			cc += (unsigned)ret;
-			if (cc < Log_alignment) {
-				memset(buf + cc, ' ', Log_alignment - cc);
-				cc = Log_alignment;
-			}
-		}
+		if ((cc = out_printfile(buf, file, line, func, 1)) == MAXPRINT)
+			goto end;
 
 		out_snprintf(&buf[cc], MAXPRINT - cc, "%s%s", errormsg,
 				suffix);

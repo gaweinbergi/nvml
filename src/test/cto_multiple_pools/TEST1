@@ -37,6 +37,8 @@
 export UNITTEST_NAME=cto_multiple_pools/TEST1
 export UNITTEST_NUM=1
 
+export NVML_LOG_THREADID=y
+
 # standard unit test setup
 . ../unittest/unittest.sh
 
